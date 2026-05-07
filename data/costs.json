@@ -1,0 +1,5 @@
+[
+    {"id": 1, "desc": "Licences Microsoft Fabric (F64)", "cat": "Infrastructure", "amount": 4200, "attr_type": "Global", "attr_val": "Projet"},
+    {"id": 2, "desc": "Abonnement OpenAI API", "cat": "Logiciel", "amount": 150, "attr_type": "Bucket", "attr_val": "Pipeline"},
+    {"id": 3, "desc": "Laptop GPU Haute Performance", "cat": "Matériel", "amount": 2500, "attr_type": "Collaborator", "attr_val": "Ludovic PICARD"}
+]

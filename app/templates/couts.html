@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="page-header">
+    <div>
+        <h1>Coûts Satellites</h1>
+        <p class="subtitle">Analyse et gestion des frais hors ressources humaines.</p>
+    </div>
+    <button class="btn btn-primary" onclick="openCostModal()"><i class="ph ph-plus"></i> Nouveau Coût</button>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Summary Table -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+            <h3 style="margin: 0; font-size: 1rem;">Répartition par Catégorie</h3>
+        </div>
+        <table style="margin: 0; border: none;">
+            <thead>
+                <tr>
+                    <th>Catégorie</th>
+                    <th style="text-align: right;">Montant Total</th>
+                    <th style="text-align: right; width: 60px;">%</th>
+                </tr>
+            </thead>
+            <tbody id="summary-tbody">
+                <!-- Injected by JS -->
+            </tbody>
+            <tfoot>
+                <tr style="background: var(--bg-body); font-weight: 800;">
+                    <td style="padding: 1rem;">TOTAL</td>
+                    <td id="summary-total" style="text-align: right; color: var(--accent);">0.00 €</td>
+                    <td style="text-align: right;">100%</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <h3 style="margin-bottom: 1rem; align-self: flex-start; font-size: 1rem;">Visualisation des Frais</h3>
+        <div style="width: 100%; height: 220px; display: flex; justify-content: center;">
+            <canvas id="cost-pie-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 1rem;">Détail des lignes de frais</h3>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Grouper par :</span>
+            <select id="group-detail" class="form-control" style="width: auto; padding: 4px 8px; height: 32px;" onchange="renderDetailedList()">
+                <option value="none">Aucun</option>
+                <option value="cat">Catégorie</option>
+                <option value="type">Attribution</option>
+            </select>
+        </div>
+    </div>
+    <div id="detailed-list-container">
+        <!-- Tables injected by JS -->
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="costModal" class="modal">
+    <div class="modal-content">
+        <h2 id="costModalTitle">Nouveau Coût Satellite</h2>
+        <input type="hidden" id="edit-cost-id">
+        <div class="form-group"><label>Désignation</label><input type="text" id="form-cost-desc" class="form-control" placeholder="ex: Instance AWS EC2"></div>
+        <div class="grid-cols-2">
+            <div class="form-group"><label>Catégorie</label><select id="form-cost-cat" class="form-control">{% for cat in categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label>Montant (€)</label><input type="number" id="form-cost-amount" class="form-control" placeholder="0.00" step="0.01"></div>
+        </div>
+        <div class="grid-cols-2">
+            <div class="form-group"><label>Type d'Attribution</label><select id="form-attr-type" class="form-control" onchange="updateAttrValues()"><option value="Global">Global Projet</option><option value="Sprint">Sprint</option><option value="Bucket">Bucket</option><option value="Collaborator">Collaborateur</option></select></div>
+            <div class="form-group"><label>Valeur</label><select id="form-attr-val" class="form-control"><option value="Projet">Projet Complet</option></select></div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;"><button class="btn btn-secondary" onclick="closeCostModal()">Annuler</button><button class="btn btn-primary" onclick="saveCost()">Enregistrer</button></div>
+    </div>
+</div>
+
+<script>
+let allCosts = [
+    {% for cost in costs %}
+    { id: "{{ cost.id }}", desc: "{{ cost.desc }}", cat: "{{ cost.cat }}", amount: {{ cost.amount }}, attr_type: "{{ cost.attr_type }}", attr_val: "{{ cost.attr_val }}" },
+    {% endfor %}
+];
+const buckets = {{ buckets|tojson }};
+const collaborators = {{ collaborators|tojson }};
+let myPieChart = null;
+
+function updateAttrValues(savedVal=null) {
+    const type = document.getElementById('form-attr-type').value;
+    const sel = document.getElementById('form-attr-val');
+    sel.innerHTML = '';
+    if(type==='Global') sel.innerHTML='<option value="Projet">Projet Complet</option>';
+    else if(type==='Sprint') for(let i=1;i<=4;i++) sel.innerHTML+=`<option value="Sprint ${i}">Sprint ${i}</option>`;
+    else if(type==='Bucket') buckets.forEach(b => sel.innerHTML+=`<option value="${b}">${b}</option>`);
+    else if(type==='Collaborator') collaborators.forEach(c => sel.innerHTML+=`<option value="${c}">${c}</option>`);
+    if(savedVal) sel.value=savedVal;
+}
+
+function renderSummary() {
+    const summaryTbody = document.getElementById('summary-tbody');
+    summaryTbody.innerHTML = '';
+    const catTotals = {};
+    let grandTotal = 0;
+
+    allCosts.forEach(c => {
+        catTotals[c.cat] = (catTotals[c.cat] || 0) + c.amount;
+        grandTotal += c.amount;
+    });
+
+    Object.keys(catTotals).sort().forEach(cat => {
+        const amount = catTotals[cat];
+        const percent = grandTotal > 0 ? (amount / grandTotal * 100).toFixed(1) : 0;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="font-weight: 600;">${cat}</td>
+            <td style="text-align: right; font-weight: 700;">${amount.toLocaleString('fr-FR', {minimumFractionDigits:2})} €</td>
+            <td style="text-align: right; color: var(--text-secondary); font-size: 0.8rem;">${percent}%</td>
+        `;
+        summaryTbody.appendChild(row);
+    });
+
+    document.getElementById('summary-total').innerText = grandTotal.toLocaleString('fr-FR', {minimumFractionDigits:2}) + ' €';
+    renderPieChart(catTotals);
+}
+
+function renderPieChart(data) {
+    const ctx = document.getElementById('cost-pie-chart').getContext('2d');
+    if (myPieChart) myPieChart.destroy();
+
+    const colors = ['#2d2d6e', '#4a4aad', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'];
+
+    myPieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                data: Object.values(data),
+                backgroundColor: colors.slice(0, Object.keys(data).length),
+                borderWidth: 0,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11, family: 'Inter' }, color: '#6e6e73' } }
+            }
+        }
+    });
+}
+
+function renderDetailedList() {
+    const container = document.getElementById('detailed-list-container');
+    const groupKey = document.getElementById('group-detail').value;
+    container.innerHTML = '';
+
+    if (groupKey === 'none') {
+        const table = createTable(allCosts);
+        container.appendChild(table);
+    } else {
+        const groups = {};
+        allCosts.forEach(c => {
+            const key = groupKey === 'cat' ? c.cat : c.attr_type;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(c);
+        });
+
+        Object.keys(groups).sort().forEach(key => {
+            const header = document.createElement('div');
+            header.style.cssText = 'padding: 0.75rem 1.25rem; background: var(--bg-body); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border-light);';
+            header.innerText = key;
+            container.appendChild(header);
+            container.appendChild(createTable(groups[key]));
+        });
+    }
+}
+
+function createTable(data) {
+    const table = document.createElement('table');
+    table.style.margin = '0';
+    table.innerHTML = `
+        <thead><tr><th>Désignation</th><th>Catégorie</th><th>Attribution</th><th style="text-align: right;">Montant</th><th style="text-align: center;">Actions</th></tr></thead>
+        <tbody></tbody>
+    `;
+    const tbody = table.querySelector('tbody');
+    data.forEach(c => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="font-weight: 600;">${c.desc}</td>
+            <td><span class="badge">${c.cat}</span></td>
+            <td><span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">${c.attr_type}</span><span style="color: var(--accent); font-weight: 600; font-size: 0.85rem;">${c.attr_val}</span></td>
+            <td style="text-align: right; font-weight: 700;">${c.amount.toLocaleString('fr-FR', {minimumFractionDigits:2})} €</td>
+            <td style="text-align: center;"><div style="display: flex; gap: 0.75rem; justify-content: center;"><i class="ph ph-pencil-simple edit-btn" onclick="editCost('${c.id}')"></i><i class="ph ph-trash remove-btn" onclick="removeCost('${c.id}')"></i></div></td>
+        `;
+        tbody.appendChild(row);
+    });
+    return table;
+}
+
+function openCostModal(isEdit=false) { 
+    document.getElementById('costModal').classList.add('active'); 
+    if(!isEdit) { 
+        document.getElementById('costModalTitle').innerText="Nouveau Coût Satellite"; 
+        document.getElementById('edit-cost-id').value=""; 
+        document.getElementById('form-cost-desc').value=""; 
+        document.getElementById('form-cost-amount').value=""; 
+        document.getElementById('form-attr-type').value="Global"; 
+        updateAttrValues(); 
+    } 
+}
+function closeCostModal() { document.getElementById('costModal').classList.remove('active'); }
+
+function editCost(id) {
+    const cost = allCosts.find(c => c.id === id);
+    document.getElementById('costModalTitle').innerText = "Modifier le coût";
+    document.getElementById('edit-cost-id').value = cost.id;
+    document.getElementById('form-cost-desc').value = cost.desc;
+    document.getElementById('form-cost-cat').value = cost.cat;
+    document.getElementById('form-cost-amount').value = cost.amount;
+    document.getElementById('form-attr-type').value = cost.attr_type;
+    updateAttrValues(cost.attr_val);
+    openCostModal(true);
+}
+
+function saveCost() {
+    const id = document.getElementById('edit-cost-id').value;
+    const desc = document.getElementById('form-cost-desc').value;
+    const cat = document.getElementById('form-cost-cat').value;
+    const amount = parseFloat(document.getElementById('form-cost-amount').value);
+    const attrType = document.getElementById('form-attr-type').value;
+    const attrVal = document.getElementById('form-attr-val').value;
+    if(!desc || isNaN(amount)) return;
+    
+    if(id) {
+        const i = allCosts.findIndex(c => c.id === id);
+        allCosts[i] = {id, desc, cat, amount, attr_type: attrType, attr_val: attrVal};
+    } else {
+        allCosts.push({id: Date.now().toString(), desc, cat, amount, attr_type: attrType, attr_val: attrVal});
+    }
+    
+    renderSummary();
+    renderDetailedList();
+    closeCostModal();
+}
+
+function removeCost(id) {
+    if(confirm("Supprimer ce coût ?")) {
+        allCosts = allCosts.filter(c => c.id !== id);
+        renderSummary();
+        renderDetailedList();
+    }
+}
+
+renderSummary();
+renderDetailedList();
+</script>
+{% endblock %}

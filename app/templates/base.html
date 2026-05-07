@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title if title else 'NovaRetail Tracker' }} — Sup de Vinci</title>
+    <meta name="description" content="Tableau de bord de suivi du projet NovaRetail — M2 Big Data, Sup de Vinci.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="logo">NOVARETAIL</div>
+        <ul class="nav-links">
+            <li class="nav-item">
+                <a href="{{ url_for('main.index') }}" class="nav-link {{ 'active' if request.path == '/' }}">
+                    <i class="ph ph-squares-four"></i> Dashboard
+                </a>
+            </li>
+
+            <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Note de cadrage</li>
+            
+            <li class="nav-item">
+                <a href="{{ url_for('main.contexte') }}" class="nav-link {{ 'active' if '/contexte' in request.path }}">
+                    <i class="ph ph-info"></i> Contexte
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.perimetre') }}" class="nav-link {{ 'active' if '/perimetre' in request.path }}">
+                    <i class="ph ph-target"></i> Périmètre
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.parties_prenantes') }}" class="nav-link {{ 'active' if '/parties-prenantes' in request.path }}">
+                    <i class="ph ph-users-three"></i> Équipe & RH
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.risques') }}" class="nav-link {{ 'active' if '/risques' in request.path }}">
+                    <i class="ph ph-warning-octagon"></i> Risques
+                </a>
+            </li>
+
+            <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Pilotage</li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('main.backlog') }}" class="nav-link {{ 'active' if '/backlog' in request.path }}">
+                    <i class="ph ph-list-checks"></i> Backlog
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.gantt') }}" class="nav-link {{ 'active' if '/gantt' in request.path }}">
+                    <i class="ph ph-chart-bar-horizontal"></i> Gantt
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.raci') }}" class="nav-link {{ 'active' if '/raci' in request.path }}">
+                    <i class="ph ph-table"></i> Matrice RACI
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.suivi') }}" class="nav-link {{ 'active' if '/suivi' in request.path }}">
+                    <i class="ph ph-calendar-check"></i> Suivi d'Avancement
+                </a>
+            </li>
+
+            <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Financier</li>
+            
+            <li class="nav-item">
+                <a href="{{ url_for('main.couts') }}" class="nav-link {{ 'active' if '/couts' in request.path }}">
+                    <i class="ph ph-receipt"></i> Coûts Satellites
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.budget') }}" class="nav-link {{ 'active' if '/budget' in request.path }}">
+                    <i class="ph ph-chart-pie-slice"></i> Budget
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

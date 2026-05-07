@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Roadmap & Tâches</h1>
+<p style="color: var(--text-secondary); margin-bottom: 2rem;">Planification interactive des étapes clés du projet data.</p>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2>Backlog du projet</h2>
+        <button class="btn btn-primary" onclick="addTask()">+ Nouvelle Tâche</button>
+    </div>
+
+    <div id="task-list">
+        {% for task in tasks %}
+        <div class="list-item">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: {{ '#22c55e' if task.status == 'Done' else '#eab308' if task.status == 'In Progress' else '#64748b' }}"></div>
+                <span>{{ task.task }}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <span style="font-size: 0.8rem; background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 1rem; color: var(--text-secondary)">{{ task.status }}</span>
+                <i class="ph ph-trash remove-btn" onclick="removeItem(this)"></i>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function addTask() {
+    const taskName = prompt("Nom de la tâche :");
+    if(!taskName) return;
+
+    const list = document.getElementById('task-list');
+    const newItem = document.createElement('div');
+    newItem.className = 'list-item';
+    newItem.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 12px; height: 12px; border-radius: 50%; background: #64748b"></div>
+            <span>${taskName}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <span style="font-size: 0.8rem; background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 1rem; color: var(--text-secondary)">To Do</span>
+            <i class="ph ph-trash remove-btn" onclick="removeItem(this)"></i>
+        </div>
+    `;
+    
+    list.prepend(newItem);
+    
+    // Animation
+    newItem.style.opacity = '0';
+    newItem.style.transform = 'translateY(-10px)';
+    setTimeout(() => {
+        newItem.style.transition = 'all 0.3s ease';
+        newItem.style.opacity = '1';
+        newItem.style.transform = 'translateY(0)';
+    }, 10);
+}
+
+function removeItem(el) {
+    const item = el.closest('.list-item');
+    item.style.opacity = '0';
+    item.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        item.remove();
+    }, 300);
+}
+</script>
+{% endblock %}

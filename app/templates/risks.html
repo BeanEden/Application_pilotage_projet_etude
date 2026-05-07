@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Risques & Hypothèses</h1>
+        <p class="subtitle">Analyse de la criticité et plans de contingence du projet NovaRetail.</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Matrice des Risques</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Risque identifié</th>
+                <th>Probabilité</th>
+                <th>Impact</th>
+                <th>Criticité</th>
+                <th>Action Corrective</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="font-weight: 600;">Latence API Fabric</td>
+                <td><span class="badge" style="background: rgba(255,159,10,0.1); color: var(--warning);">Moyenne</span></td>
+                <td><span class="badge" style="background: rgba(255,59,48,0.1); color: var(--danger);">Fort</span></td>
+                <td style="font-weight: 700; color: var(--warning);">Élevée</td>
+                <td style="color: var(--text-secondary); font-size: 0.85rem;">Mise en place d'un cache local et monitoring.</td>
+            </tr>
+            <tr>
+                <td style="font-weight: 600;">Disponibilité Licence Fabric F64</td>
+                <td><span class="badge" style="background: rgba(255,59,48,0.1); color: var(--danger);">Haute</span></td>
+                <td><span class="badge" style="background: rgba(255,59,48,0.1); color: var(--danger);">Critique</span></td>
+                <td style="font-weight: 700; color: var(--danger);">Critique</td>
+                <td style="color: var(--text-secondary); font-size: 0.85rem;">Stack alternative Docker/Airflow prête en fallback.</td>
+            </tr>
+            <tr>
+                <td style="font-weight: 600;">Complexité modélisation Star Schema</td>
+                <td><span class="badge" style="background: rgba(255,159,10,0.1); color: var(--warning);">Moyenne</span></td>
+                <td><span class="badge" style="background: rgba(255,159,10,0.1); color: var(--warning);">Moyen</span></td>
+                <td style="font-weight: 700; color: var(--warning);">Modérée</td>
+                <td style="color: var(--text-secondary); font-size: 0.85rem;">Itérations de validation avec le rapport Livrable B.</td>
+            </tr>
+            <tr>
+                <td style="font-weight: 600;">Charge équipe insuffisante</td>
+                <td><span class="badge" style="background: rgba(48,209,88,0.1); color: var(--success);">Basse</span></td>
+                <td><span class="badge" style="background: rgba(255,159,10,0.1); color: var(--warning);">Moyen</span></td>
+                <td style="font-weight: 700; color: var(--success);">Faible</td>
+                <td style="color: var(--text-secondary); font-size: 0.85rem;">Matrice RACI claire et suivi Gantt hebdomadaire.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Hypothèses de Travail</h2>
+    <ul style="padding-left: 1.25rem; color: var(--text-secondary); line-height: 2.2; font-size: 0.9rem;">
+        <li>Accès Fabric F64 garanti par l'école pour toute la durée du projet.</li>
+        <li>Données NovaRetail suffisamment complètes pour alimenter le Star Schema.</li>
+        <li>Disponibilité de l'équipe à hauteur de 3 jours/semaine minimum.</li>
+        <li>Format .docx des rapports NovaRetail stable et structuré pour Docling.</li>
+    </ul>
+</div>
+{% endblock %}

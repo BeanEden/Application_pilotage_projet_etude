@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Suivi d'Avancement</h1>
+        <p class="subtitle">Analyse de la progression théorique et financière à une date donnée.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <div style="background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 2px;">
+            <button class="btn-group" onclick="switchMode('spent', this)" id="btn-spent" style="background: var(--accent); color: white;">Dépensé / Consommé</button>
+            <button class="btn-group" onclick="switchMode('remaining', this)" id="btn-remaining" style="background: transparent; color: var(--text-secondary);">Reste à Faire</button>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 300px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary);">Date de situation du projet</label>
+                <span id="slider-week-label" style="font-size: 0.8rem; font-weight: 800; color: var(--accent);">Semaine 1</span>
+            </div>
+            <input type="range" id="date-slider" min="0" max="{{ weeks|length - 1 }}" value="0" step="1" style="width: 100%; cursor: pointer;" oninput="updateMonitoring()">
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.7rem; font-weight: 600; color: var(--text-secondary);">
+                {% for week in weeks %}
+                <span style="cursor: pointer;" onclick="setSlider({{ loop.index0 }})">{{ week }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div style="padding: 1rem 1.5rem; background: var(--accent-glow); border-radius: 12px; border: 1px solid var(--accent-light); min-width: 180px; text-align: center;">
+            <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); font-weight: 700;">Situation au</div>
+            <div id="current-date-display" style="font-size: 1.5rem; font-weight: 800; color: var(--accent);">12/05</div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-label" id="label-tasks">Tâches Terminées</div>
+        <div class="stat-value" id="val-tasks">0</div>
+        <div id="sub-tasks" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">—</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label" id="label-work">Charge (JH)</div>
+        <div class="stat-value" id="val-work">0 j</div>
+        <div id="sub-work" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">—</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label" id="label-budget">Budget</div>
+        <div class="stat-value" id="val-budget">0 €</div>
+        <div id="sub-budget" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">—</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem;">
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+            <h3 id="list-title" style="margin: 0; font-size: 1rem;">Détail des tâches</h3>
+        </div>
+        <div style="max-height: 400px; overflow-y: auto;">
+            <table id="tasks-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th>Tâche</th>
+                        <th>Sprint</th>
+                        <th style="text-align: right;">Coût</th>
+                    </tr>
+                </thead>
+                <tbody id="tasks-tbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 350px;">
+        <h3 id="gauge-title" style="margin-bottom: 1.5rem;">Progression Globale</h3>
+        <div style="position: relative; width: 180px; height: 180px;">
+            <svg viewBox="0 0 36 36" style="transform: rotate(-90deg); width: 100%; height: 100%;">
+                <circle cx="18" cy="18" r="16" fill="none" stroke="var(--border-light)" stroke-width="3" />
+                <circle id="progress-circle" cx="18" cy="18" r="16" fill="none" stroke="var(--accent)" stroke-width="3" 
+                        stroke-dasharray="0 100" style="transition: stroke-dasharray 0.6s cubic-bezier(0.4, 0, 0.2, 1);" />
+            </svg>
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                <div id="progress-text" style="font-size: 2rem; font-weight: 800; color: var(--accent);">0%</div>
+                <div id="gauge-sub" style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Complété</div>
+            </div>
+        </div>
+        <p style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-secondary); max-width: 200px;">
+            Calculé sur la base de la valeur financière du travail accompli.
+        </p>
+    </div>
+</div>
+
+<script>
+const rawTasks = {{ tasks|tojson }};
+const collaborators = {{ collaborators|tojson }};
+const satelliteCosts = {{ satellite_costs|tojson }};
+const weeks = {{ weeks|tojson }};
+
+let currentMode = 'spent'; 
+
+function switchMode(mode, btn) {
+    currentMode = mode;
+    document.querySelectorAll('.btn-group').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-secondary)';
+    });
+    btn.style.background = 'var(--accent)';
+    btn.style.color = 'white';
+    updateMonitoring();
+}
+
+function setSlider(val) {
+    document.getElementById('date-slider').value = val;
+    updateMonitoring();
+}
+
+function updateMonitoring() {
+    const weekIdx = parseInt(document.getElementById('date-slider').value);
+    document.getElementById('current-date-display').innerText = weeks[weekIdx];
+    document.getElementById('slider-week-label').innerText = `Semaine ${weekIdx + 1}`;
+
+    let totalTasksCount = rawTasks.length;
+    let totalWorkDays = 0;
+    let totalBudget = 0;
+
+    // Total Project Budget & Workload
+    rawTasks.forEach(t => {
+        const days = t.duration.includes('2 sem') ? 10 : 5;
+        totalWorkDays += days;
+        t.assignees.forEach(name => {
+            const co = collaborators.find(c => c.name === name);
+            if(co) totalBudget += co.tjm_applied * days;
+        });
+    });
+    satelliteCosts.forEach(c => totalBudget += c.amount);
+
+    let sitTasks = [];
+    let sitWork = 0;
+    let sitBudget = 0;
+
+    // Process tasks based on the selected week situation
+    rawTasks.forEach(t => {
+        const days = t.duration.includes('2 sem') ? 10 : 5;
+        const startWeek = t.start_week;
+        const endWeek = startWeek + (t.duration.includes('2 sem') ? 2 : 1);
+        
+        let taskCost = 0;
+        t.assignees.forEach(name => {
+            const co = collaborators.find(c => c.name === name);
+            if(co) taskCost += co.tjm_applied * days;
+        });
+
+        // A task is "finished" if its end week is <= selected week + 1
+        const isFinished = endWeek <= weekIdx + 1;
+        
+        if (currentMode === 'spent') {
+            if (isFinished) {
+                sitTasks.push(t);
+                sitWork += days;
+                sitBudget += taskCost;
+            }
+        } else {
+            if (!isFinished) {
+                sitTasks.push(t);
+                sitWork += days;
+                sitBudget += taskCost;
+            }
+        }
+    });
+
+    // Handle satellite costs distribution (theoretical spent vs remaining)
+    let totalSatSpent = 0;
+    satelliteCosts.forEach(c => {
+        let isSatSpent = false;
+        if (c.attr_type === 'Sprint') {
+            const sprintNum = parseInt(c.attr_val.split(' ')[1]);
+            if (sprintNum <= Math.floor(weekIdx / 2.5) + 1) isSatSpent = true; // Approx sprint distribution
+        } else if (c.attr_type === 'Global' || c.attr_type === 'Bucket') {
+            // Assume distributed over time
+            const progressRatio = (weekIdx + 1) / weeks.length;
+            if (currentMode === 'spent') sitBudget += c.amount * progressRatio;
+            else sitBudget += c.amount * (1 - progressRatio);
+            totalSatSpent += c.amount * progressRatio;
+        }
+        
+        if (isSatSpent) {
+            if (currentMode === 'spent') sitBudget += c.amount;
+            totalSatSpent += c.amount;
+        } else {
+            if (currentMode === 'remaining') sitBudget += c.amount;
+        }
+    });
+
+    // Update UI Labels
+    if (currentMode === 'spent') {
+        document.getElementById('label-tasks').innerText = "Tâches Terminées";
+        document.getElementById('label-work').innerText = "JH Consommés";
+        document.getElementById('label-budget').innerText = "Budget Dépensé";
+        document.getElementById('list-title').innerText = "Détail des tâches terminées";
+        document.getElementById('gauge-title').innerText = "Avancement Global";
+        document.getElementById('gauge-sub').innerText = "Complété";
+    } else {
+        document.getElementById('label-tasks').innerText = "Tâches Restantes";
+        document.getElementById('label-work').innerText = "JH Restants";
+        document.getElementById('label-budget').innerText = "Reste à Engager";
+        document.getElementById('list-title').innerText = "Détail du reste à faire";
+        document.getElementById('gauge-title').innerText = "Reste à Faire";
+        document.getElementById('gauge-sub').innerText = "Restant";
+    }
+
+    document.getElementById('val-tasks').innerText = sitTasks.length;
+    document.getElementById('sub-tasks').innerText = `sur ${totalTasksCount} tâches`;
+    
+    document.getElementById('val-work').innerText = Math.round(sitWork) + ' j';
+    document.getElementById('sub-work').innerText = `sur ${totalWorkDays} j total`;
+
+    document.getElementById('val-budget').innerText = Math.round(sitBudget).toLocaleString() + ' €';
+    document.getElementById('sub-budget').innerText = `sur ${Math.round(totalBudget).toLocaleString()} € total`;
+
+    // Progress Circle logic: always calculate completion first
+    let completedBudget = 0;
+    rawTasks.forEach(t => {
+        const endWeek = t.start_week + (t.duration.includes('2 sem') ? 2 : 1);
+        if (endWeek <= weekIdx + 1) {
+            const days = t.duration.includes('2 sem') ? 10 : 5;
+            t.assignees.forEach(name => {
+                const co = collaborators.find(c => c.name === name);
+                if(co) completedBudget += co.tjm_applied * days;
+            });
+        }
+    });
+    completedBudget += totalSatSpent;
+
+    const completionRate = (completedBudget / totalBudget) * 100;
+    const finalGaugeVal = currentMode === 'spent' ? completionRate : (100 - completionRate);
+    
+    document.getElementById('progress-circle').setAttribute('stroke-dasharray', `${finalGaugeVal}, 100`);
+    document.getElementById('progress-text').innerText = Math.round(finalGaugeVal) + '%';
+
+    // Table Rendering
+    const tbody = document.getElementById('tasks-tbody');
+    tbody.innerHTML = '';
+    sitTasks.forEach(t => {
+        let taskCost = 0;
+        const days = t.duration.includes('2 sem') ? 10 : 5;
+        t.assignees.forEach(name => {
+            const co = collaborators.find(c => c.name === name);
+            if(co) taskCost += co.tjm_applied * days;
+        });
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><span class="mono" style="color: var(--accent); font-weight:800;">${t.id}</span></td>
+            <td style="font-weight: 500;">${t.task}</td>
+            <td><span class="badge">S${t.sprint}</span></td>
+            <td style="text-align: right; font-weight:700; color: var(--accent);">${Math.round(taskCost).toLocaleString()} €</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+updateMonitoring();
+</script>
+
+<style>
+#date-slider {
+    -webkit-appearance: none;
+    height: 6px;
+    background: var(--border-light);
+    border-radius: 5px;
+    outline: none;
+}
+#date-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 0 4px var(--accent-glow);
+    transition: transform 0.1s;
+}
+#date-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+</style>
+{% endblock %}

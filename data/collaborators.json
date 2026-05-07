@@ -1,0 +1,29 @@
+[
+    {
+        "id": 1,
+        "name": "Jean-Corentin LOIRAT",
+        "role": "Project Manager / Data Architect",
+        "salary": 55000,
+        "category": "Cadre",
+        "charge_rate": 0.45,
+        "tjm_applied": 450
+    },
+    {
+        "id": 2,
+        "name": "Clément METOIS",
+        "role": "Data Engineer / DevOps",
+        "salary": 48000,
+        "category": "Cadre",
+        "charge_rate": 0.45,
+        "tjm_applied": 400
+    },
+    {
+        "id": 3,
+        "name": "Ludovic PICARD",
+        "role": "Data Scientist / Power BI Expert",
+        "salary": 45000,
+        "category": "Cadre",
+        "charge_rate": 0.45,
+        "tjm_applied": 350
+    }
+]

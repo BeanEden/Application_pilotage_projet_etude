@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Backlog NovaRetail</h1>
+        <p class="subtitle">Gestion interactive des tâches et des ressources du projet.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <div style="background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 2px;">
+            <button class="btn-group" onclick="switchView('sprint', this)" id="btn-sprint" style="background: var(--accent); color: white;">Par Sprint</button>
+            <button class="btn-group" onclick="switchView('bucket', this)" id="btn-bucket" style="background: transparent; color: var(--text-secondary);">Par Bucket</button>
+        </div>
+        <button class="btn btn-primary" onclick="openTaskModal()"><i class="ph ph-plus"></i> Nouvelle Tâche</button>
+    </div>
+</div>
+
+<div id="backlog-container"></div>
+
+<!-- Task Modal -->
+<div id="taskModal" class="modal">
+    <div class="modal-content">
+        <h2 id="taskModalTitle">Modifier la tâche</h2>
+        <input type="hidden" id="edit-task-old-id">
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label>ID Tâche</label>
+                <input type="text" id="form-task-id" class="form-control" placeholder="ex: C0-1">
+            </div>
+            <div class="form-group">
+                <label>Sprint</label>
+                <select id="form-task-sprint" class="form-control">
+                    <option value="1">Sprint 1</option><option value="2">Sprint 2</option>
+                    <option value="3">Sprint 3</option><option value="4">Sprint 4</option>
+                </select>
+            </div>
+        </div>
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label>Nom de la tâche</label>
+                <input type="text" id="form-task-name" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Bucket</label>
+                <select id="form-task-bucket" class="form-control">
+                    <option value="Cadrage">Cadrage</option><option value="Architecture">Architecture</option>
+                    <option value="Modélisation">Modélisation</option><option value="Pipeline">Pipeline</option>
+                    <option value="Stack Alternative">Stack Alternative</option><option value="Power BI">Power BI</option>
+                    <option value="Rapport">Rapport</option><option value="Soutenance">Soutenance</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Assigné à (séparés par virgule)</label>
+            <input type="text" id="form-task-assignees" class="form-control" placeholder="Jean-Corentin LOIRAT, Clément METOIS">
+        </div>
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label>Durée</label>
+                <input type="text" id="form-task-duration" class="form-control" placeholder="ex: 1 sem">
+            </div>
+            <div class="form-group">
+                <label>Dépendances</label>
+                <input type="text" id="form-task-deps" class="form-control" placeholder="ex: A1-5, B1-5">
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+            <button class="btn btn-secondary" onclick="closeTaskModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="saveTask()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let allTasks = [
+    {% for task in tasks %}
+    { id: "{{ task.id }}", task: "{{ task.task }}", sprint: {{ task.sprint }}, duration: "{{ task.duration }}", assignees: {{ task.assignees|tojson }}, deps: "{{ task.deps }}", bucket: "{{ task.bucket }}" },
+    {% endfor %}
+];
+
+let currentGrouping = 'sprint';
+
+function renderBacklog() {
+    const container = document.getElementById('backlog-container');
+    container.innerHTML = '';
+    const groups = {};
+    allTasks.forEach(task => { const k = task[currentGrouping] || "Non classé"; if (!groups[k]) groups[k] = []; groups[k].push(task); });
+    const keys = Object.keys(groups).sort((a, b) => currentGrouping === 'sprint' ? parseInt(a) - parseInt(b) : a.localeCompare(b));
+
+    keys.forEach(key => {
+        const title = currentGrouping === 'sprint' ? `Sprint ${key}` : key;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.padding = '0';
+        card.style.overflow = 'hidden';
+        card.innerHTML = `
+            <div style="padding: 1rem 1.5rem; background: var(--bg-body); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
+                <i class="ph ph-${currentGrouping === 'sprint' ? 'rocket-launch' : 'package'}" style="color: var(--accent-vivid);"></i>
+                <span style="font-weight: 700; font-size: 0.9rem;">${title}</span>
+                <span class="badge" style="margin-left: auto;">${groups[key].length} tâches</span>
+            </div>
+            <table><thead><tr>
+                <th style="width: 80px;">ID</th><th>Tâche</th><th>Assigné à</th><th>Durée</th><th>Dépend.</th><th style="width: 80px; text-align: center;">Actions</th>
+            </tr></thead><tbody id="tbody-${key}"></tbody></table>
+        `;
+        container.appendChild(card);
+        const tbody = document.getElementById(`tbody-${key}`);
+        groups[key].forEach(task => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><span class="mono" style="color: var(--accent-vivid); font-weight: 700; font-size: 0.8rem;">${task.id}</span></td>
+                <td style="font-weight: 500;">${task.task}</td>
+                <td><div style="display: flex; gap: 4px; flex-wrap: wrap;">${task.assignees.map(p => `<span class="badge">${p.split(' ')[0]}</span>`).join('')}</div></td>
+                <td style="color: var(--text-secondary); font-size: 0.85rem;"><i class="ph ph-clock"></i> ${task.duration}</td>
+                <td>${task.deps !== '-' ? `<span class="badge" style="background: rgba(255,59,48,0.06); color: var(--danger);">${task.deps}</span>` : '<span style="color: var(--border);">—</span>'}</td>
+                <td style="text-align: center;"><div style="display: flex; gap: 0.75rem; justify-content: center;"><i class="ph ph-pencil-simple edit-btn" onclick="editTask('${task.id}')"></i><i class="ph ph-trash remove-btn" onclick="removeTask('${task.id}')"></i></div></td>
+            `;
+            tbody.appendChild(row);
+        });
+    });
+}
+
+function switchView(view, btn) {
+    currentGrouping = view;
+    document.querySelectorAll('.btn-group').forEach(b => { b.style.background = 'transparent'; b.style.color = 'var(--text-secondary)'; });
+    btn.style.background = 'var(--accent)'; btn.style.color = 'white';
+    renderBacklog();
+}
+
+function openTaskModal(isEdit = false) {
+    document.getElementById('taskModal').classList.add('active');
+    if(!isEdit) { document.getElementById('taskModalTitle').innerText = "Nouvelle Tâche"; document.getElementById('edit-task-old-id').value = ""; ['form-task-id','form-task-name','form-task-assignees','form-task-duration'].forEach(id => document.getElementById(id).value = ""); document.getElementById('form-task-deps').value = "-"; }
+}
+function closeTaskModal() { document.getElementById('taskModal').classList.remove('active'); }
+
+function editTask(taskId) {
+    const task = allTasks.find(t => t.id === taskId); if (!task) return;
+    document.getElementById('taskModalTitle').innerText = "Modifier la tâche";
+    document.getElementById('edit-task-old-id').value = task.id;
+    document.getElementById('form-task-id').value = task.id;
+    document.getElementById('form-task-name').value = task.task;
+    document.getElementById('form-task-assignees').value = task.assignees.join(', ');
+    document.getElementById('form-task-duration').value = task.duration;
+    document.getElementById('form-task-deps').value = task.deps;
+    document.getElementById('form-task-sprint').value = task.sprint;
+    document.getElementById('form-task-bucket').value = task.bucket;
+    openTaskModal(true);
+}
+
+function saveTask() {
+    const oldId = document.getElementById('edit-task-old-id').value;
+    const id = document.getElementById('form-task-id').value;
+    const taskName = document.getElementById('form-task-name').value;
+    const assignees = document.getElementById('form-task-assignees').value.split(',').map(s => s.trim()).filter(s => s);
+    const duration = document.getElementById('form-task-duration').value;
+    const deps = document.getElementById('form-task-deps').value;
+    const sprint = parseInt(document.getElementById('form-task-sprint').value);
+    const bucket = document.getElementById('form-task-bucket').value;
+    if(!id || !taskName) return;
+    const data = { id, task: taskName, assignees, duration, deps, sprint, bucket };
+    if(oldId) { const i = allTasks.findIndex(t => t.id === oldId); if (i !== -1) allTasks[i] = data; } else { allTasks.push(data); }
+    renderBacklog(); closeTaskModal();
+}
+
+function removeTask(taskId) { if(confirm("Supprimer cette tâche ?")) { allTasks = allTasks.filter(t => t.id !== taskId); renderBacklog(); } }
+
+renderBacklog();
+</script>
+{% endblock %}

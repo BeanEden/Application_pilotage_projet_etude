@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Périmètre & Livrables</h1>
+        <p class="subtitle">Délimitation technique et fonctionnelle du projet NovaRetail.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <div class="card" style="border-left: 4px solid var(--success);">
+        <h2 style="color: var(--green);"><i class="ph ph-check-circle"></i> &nbsp;In Scope</h2>
+        <ul style="padding-left: 1.25rem; color: var(--text-secondary); line-height: 2.2; font-size: 0.9rem;">
+            <li>Architecture Médaillon (Bronze / Silver / Gold) sur Fabric</li>
+            <li>Pipeline d'extraction Docling</li>
+            <li>Modélisation dimensionnelle (Star Schema)</li>
+            <li>Dashboard Power BI avec connexion DirectLake</li>
+            <li>Stack alternative Docker / Airflow / Superset</li>
+            <li>Rapport technique final & soutenance</li>
+        </ul>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--danger);">
+        <h2 style="color: var(--danger);"><i class="ph ph-x-circle"></i> &nbsp;Out of Scope</h2>
+        <ul style="padding-left: 1.25rem; color: var(--text-secondary); line-height: 2.2; font-size: 0.9rem;">
+            <li>Intégration avec les CRM tiers (Phase 2)</li>
+            <li>Machine Learning prédictif (hors périmètre initial)</li>
+            <li>Déploiement en production client</li>
+        </ul>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Livrables Attendus (A → G)</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+        <div style="background: var(--bg-body); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-weight: 800; color: var(--accent); font-size: 1.2rem;">A</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Architecture & Pipeline</div>
+        </div>
+        <div style="background: var(--bg-body); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-weight: 800; color: var(--accent); font-size: 1.2rem;">B</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Modélisation</div>
+        </div>
+        <div style="background: var(--bg-body); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-weight: 800; color: var(--accent); font-size: 1.2rem;">C</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Pipeline Fabric</div>
+        </div>
+        <div style="background: var(--bg-body); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-weight: 800; color: var(--accent); font-size: 1.2rem;">D</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Power BI</div>
+        </div>
+        <div style="background: var(--bg-body); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-weight: 800; color: var(--accent); font-size: 1.2rem;">E</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Rapport</div>
+        </div>
+        <div style="background: var(--bg-body); padding: 1rem; border-radius: 8px; text-align: center;">
+            <div style="font-weight: 800; color: var(--accent); font-size: 1.2rem;">F</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Soutenance</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

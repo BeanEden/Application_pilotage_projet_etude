@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Matrice RACI</h1>
+        <p class="subtitle">Répartition des responsabilités par livrable technique. Cliquez sur un badge pour le modifier.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <div style="background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 2px;">
+            <button class="btn-group" onclick="switchRaciView('sprint', this)" id="btn-raci-sprint" style="background: var(--accent); color: white;">Par Sprint</button>
+            <button class="btn-group" onclick="switchRaciView('bucket', this)" id="btn-raci-bucket" style="background: transparent; color: var(--text-secondary);">Par Bucket</button>
+        </div>
+    </div>
+</div>
+
+<div id="raci-container">
+    <!-- Grouped tables will be injected here -->
+</div>
+
+<!-- RACI Edit Modal -->
+<div id="raciModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <h2>Modifier le rôle RACI</h2>
+        <p id="raciModalDesc" style="font-size: 0.85rem; margin-bottom: 1.5rem; color: var(--text-secondary);"></p>
+        
+        <input type="hidden" id="edit-raci-task-id">
+        <input type="hidden" id="edit-raci-person">
+        
+        <div class="form-group">
+            <label>Sélectionner le rôle</label>
+            <select id="form-raci-val" class="form-control">
+                <option value="R">R — Responsible</option>
+                <option value="A">A — Accountable</option>
+                <option value="AR">AR — Accountable & Responsible</option>
+                <option value="C">C — Consulted</option>
+                <option value="I">I — Informed</option>
+            </select>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+            <button class="btn btn-secondary" onclick="closeRaciModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="saveRaci()">Appliquer</button>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 2rem;">
+    <div class="card" style="padding: 1.25rem;">
+        <div style="font-weight: 800; color: #4f46e5; margin-bottom: 0.3rem;">R — Responsible</div>
+        <p style="font-size: 0.8rem;">Réalise l'action.</p>
+    </div>
+    <div class="card" style="padding: 1.25rem;">
+        <div style="font-weight: 800; color: #8944ab; margin-bottom: 0.3rem;">A — Accountable</div>
+        <p style="font-size: 0.8rem;">Responsable final.</p>
+    </div>
+    <div class="card" style="padding: 1.25rem;">
+        <div style="font-weight: 800; color: #0a84a0; margin-bottom: 0.3rem;">C — Consulted</div>
+        <p style="font-size: 0.8rem;">Expert sollicité.</p>
+    </div>
+    <div class="card" style="padding: 1.25rem;">
+        <div style="font-weight: 800; color: #6e6e73; margin-bottom: 0.3rem;">I — Informed</div>
+        <p style="font-size: 0.8rem;">Tenu informé.</p>
+    </div>
+</div>
+
+<script>
+let raciTasks = [
+    {% for task in tasks %}
+    {
+        id: "{{ task.id }}",
+        task: "{{ task.task }}",
+        sprint: {{ task.sprint }},
+        bucket: "{{ task.bucket }}",
+        raci: {{ task.raci|tojson }}
+    },
+    {% endfor %}
+];
+
+let currentRaciGrouping = 'sprint';
+
+function getBadgeStyles(val) {
+    if (val.includes('A') && val.includes('R')) return { bg: 'rgba(99, 102, 241, 0.08)', color: '#4f46e5' };
+    if (val.includes('R')) return { bg: 'rgba(45, 45, 110, 0.06)', color: '#2d2d6e' };
+    if (val.includes('A')) return { bg: 'rgba(137, 68, 171, 0.08)', color: '#8944ab' };
+    if (val.includes('C')) return { bg: 'rgba(10, 132, 160, 0.08)', color: '#0a84a0' };
+    return { bg: 'rgba(110, 110, 115, 0.06)', color: '#6e6e73' };
+}
+
+function renderRaci() {
+    const container = document.getElementById('raci-container');
+    container.innerHTML = '';
+    
+    const groups = {};
+    raciTasks.forEach(t => {
+        const key = t[currentRaciGrouping] || "Non classé";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(t);
+    });
+
+    const keys = Object.keys(groups).sort((a, b) => 
+        currentRaciGrouping === 'sprint' ? parseInt(a) - parseInt(b) : a.localeCompare(b)
+    );
+
+    keys.forEach(key => {
+        const title = currentRaciGrouping === 'sprint' ? `Sprint ${key}` : key;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.padding = '0';
+        card.style.overflow = 'hidden';
+        card.style.marginBottom = '2rem';
+        
+        card.innerHTML = `
+            <div style="padding: 1rem 1.5rem; background: var(--bg-body); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
+                <i class="ph ph-${currentRaciGrouping === 'sprint' ? 'rocket-launch' : 'package'}" style="color: var(--accent-vivid);"></i>
+                <span style="font-weight: 700; font-size: 0.9rem;">${title}</span>
+            </div>
+            <table style="text-align: center;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left; width: 45%;">Livrable / Activité</th>
+                        <th><div style="font-weight: 800; color: var(--accent);">JC</div><div style="font-size: 0.65rem; font-weight: 400; color: var(--text-secondary);">Jean-Corentin</div></th>
+                        <th><div style="font-weight: 800; color: var(--accent);">CL</div><div style="font-size: 0.65rem; font-weight: 400; color: var(--text-secondary);">Clément</div></th>
+                        <th><div style="font-weight: 800; color: var(--accent);">LU</div><div style="font-size: 0.65rem; font-weight: 400; color: var(--text-secondary);">Ludovic</div></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-raci-${key}"></tbody>
+            </table>
+        `;
+        
+        container.appendChild(card);
+        const tbody = document.getElementById(`tbody-raci-${key}`);
+        
+        groups[key].forEach(t => {
+            const row = document.createElement('tr');
+            row.id = `row-raci-${t.id}`;
+            row.innerHTML = `
+                <td style="text-align: left; font-weight: 600;">
+                    <span class="mono text-accent" style="margin-right: 8px; font-size: 0.8rem;">${t.id}</span>
+                    <span class="task-name">${t.task}</span>
+                </td>
+                <td>${createBadgeHtml(t.id, 'jc', t.raci.jc || 'I')}</td>
+                <td>${createBadgeHtml(t.id, 'cl', t.raci.cl || 'I')}</td>
+                <td>${createBadgeHtml(t.id, 'lu', t.raci.lu || 'I')}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    });
+}
+
+function createBadgeHtml(taskId, personCode, val) {
+    const s = getBadgeStyles(val);
+    return `<span id="badge-${taskId}-${personCode}" class="raci-badge" 
+            style="display: inline-flex; width: 38px; height: 38px; background: ${s.bg}; color: ${s.color}; border-radius: 8px; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;"
+            onclick="openRaciModal('${taskId}', '${personCode}', '${val}')">${val}</span>`;
+}
+
+function switchRaciView(view, btn) {
+    currentRaciGrouping = view;
+    document.querySelectorAll('.btn-group').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-secondary)';
+    });
+    btn.style.background = 'var(--accent)';
+    btn.style.color = 'white';
+    renderRaci();
+}
+
+function openRaciModal(taskId, personCode, currentVal) {
+    const task = raciTasks.find(t => t.id === taskId);
+    const personName = personCode === 'jc' ? 'Jean-Corentin' : (personCode === 'cl' ? 'Clément' : 'Ludovic');
+    
+    document.getElementById('raciModalDesc').innerText = `${personName} sur la tâche : ${task.task}`;
+    document.getElementById('edit-raci-task-id').value = taskId;
+    document.getElementById('edit-raci-person').value = personCode;
+    document.getElementById('form-raci-val').value = currentVal;
+    
+    document.getElementById('raciModal').classList.add('active');
+}
+
+function closeRaciModal() {
+    document.getElementById('raciModal').classList.remove('active');
+}
+
+function saveRaci() {
+    const taskId = document.getElementById('edit-raci-task-id').value;
+    const personCode = document.getElementById('edit-raci-person').value;
+    const newVal = document.getElementById('form-raci-val').value;
+    
+    const task = raciTasks.find(t => t.id === taskId);
+    task.raci[personCode] = newVal;
+    
+    renderRaci();
+    closeRaciModal();
+}
+
+renderRaci();
+</script>
+
+<style>
+.raci-badge:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-md);
+}
+</style>
+{% endblock %}

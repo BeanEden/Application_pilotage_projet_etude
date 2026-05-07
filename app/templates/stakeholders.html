@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Équipe & Coûts RH</h1>
+        <p class="subtitle">Gestion des ressources et arbitrage des TJM — Base {{ working_days }} jours ouvrés 2026.</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()"><i class="ph ph-plus"></i> Nouveau Membre</button>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+    <table>
+        <thead>
+            <tr>
+                <th>Collaborateur</th>
+                <th>Catégorie</th>
+                <th>Salaire Brut</th>
+                <th>Taux Charge</th>
+                <th>TJM Calculé</th>
+                <th>TJM Appliqué</th>
+                <th style="text-align: center;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="stakeholder-list">
+            {% for person in stakeholders %}
+            {% set tjm_calc = person.tjm %}
+            {% set tjm_app = person.tjm_applied %}
+            {% set is_alert = tjm_calc > tjm_app %}
+            <tr class="list-item-row" data-id="{{ person.id }}"
+                data-name="{{ person.name }}" data-role="{{ person.role }}"
+                data-salary="{{ person.salary }}" data-category="{{ person.category }}"
+                data-charge="{{ person.charge_rate }}" data-tjm-app="{{ person.tjm_applied }}">
+                <td>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div style="width: 36px; height: 36px; background: var(--accent-glow); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-weight: 800; font-size: 0.85rem;">{{ person.name[:2] }}</div>
+                        <div>
+                            <div style="font-weight: 600;">{{ person.name }}</div>
+                            <div style="font-size: 0.78rem; color: var(--text-secondary);">{{ person.role }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge">{{ person.category }}</span></td>
+                <td style="font-weight: 600;">{{ "{:,.0f}".format(person.salary) }} €</td>
+                <td>{{ (person.charge_rate * 100)|int }}%</td>
+                <td>
+                    <span style="font-weight: 600; {{ 'color: var(--danger);' if is_alert }}">
+                        {{ person.tjm }} €
+                        {% if is_alert %}<i class="ph ph-warning-circle" style="font-size: 0.9rem;" title="TJM calculé > appliqué"></i>{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <span style="font-size: 1.1rem; font-weight: 800; color: var(--accent);">{{ person.tjm_applied }} €</span>
+                </td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                        <i class="ph ph-pencil-simple edit-btn" onclick="editPerson(this)"></i>
+                        <i class="ph ph-trash remove-btn" onclick="removeItem(this)"></i>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal -->
+<div id="memberModal" class="modal">
+    <div class="modal-content">
+        <h2 id="modalTitle">Ajouter un membre</h2>
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+            <label>Nom complet</label>
+            <input type="text" id="form-name" class="form-control" placeholder="ex: Jean Dupont">
+        </div>
+        <div class="form-group">
+            <label>Rôle / Poste</label>
+            <input type="text" id="form-role" class="form-control" placeholder="ex: Data Engineer">
+        </div>
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label>Catégorie</label>
+                <select id="form-category" class="form-control">
+                    <option value="Cadre">Cadre</option>
+                    <option value="ETAM">ETAM</option>
+                    <option value="Ouvrier">Ouvrier</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Salaire Brut Annuel (€)</label>
+                <input type="number" id="form-salary" class="form-control" placeholder="45000">
+            </div>
+        </div>
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label>Taux de charge (%)</label>
+                <input type="number" id="form-charge" class="form-control" value="45">
+            </div>
+            <div class="form-group">
+                <label>TJM Appliqué (€)</label>
+                <input type="number" id="form-tjm-app" class="form-control" placeholder="500">
+            </div>
+        </div>
+        <div style="background: var(--bg-body); border-radius: 8px; padding: 1rem; margin-top: 0.5rem;">
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-secondary); font-size: 0.85rem;">TJM Calculé (coût interne) :</span>
+                <span id="display-tjm-calc" style="font-weight: 700;">0.00 €</span>
+            </div>
+            <div id="alert-zone" style="margin-top: 0.5rem; font-size: 0.82rem; display: none; color: var(--danger);">
+                <i class="ph ph-warning"></i> Le coût interne dépasse le TJM appliqué au projet.
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+            <button class="btn btn-secondary" onclick="closeModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="saveMember()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const WORKING_DAYS = {{ working_days }};
+
+function calculateTJM() {
+    const salary = parseFloat(document.getElementById('form-salary').value) || 0;
+    const charge = parseFloat(document.getElementById('form-charge').value) || 0;
+    const tjmApp = parseFloat(document.getElementById('form-tjm-app').value) || 0;
+    const tjmCalc = (salary * (1 + charge/100)) / WORKING_DAYS;
+    document.getElementById('display-tjm-calc').innerText = tjmCalc.toFixed(2) + ' €';
+    const alertZone = document.getElementById('alert-zone');
+    if (tjmCalc > tjmApp && tjmApp > 0) {
+        alertZone.style.display = 'block';
+        document.getElementById('display-tjm-calc').style.color = 'var(--danger)';
+    } else {
+        alertZone.style.display = 'none';
+        document.getElementById('display-tjm-calc').style.color = 'var(--text-primary)';
+    }
+    return tjmCalc.toFixed(2);
+}
+
+document.getElementById('form-salary').addEventListener('input', calculateTJM);
+document.getElementById('form-charge').addEventListener('input', calculateTJM);
+document.getElementById('form-tjm-app').addEventListener('input', calculateTJM);
+
+function openModal(isEdit = false) {
+    document.getElementById('memberModal').classList.add('active');
+    if(!isEdit) {
+        document.getElementById('modalTitle').innerText = "Ajouter un membre";
+        document.getElementById('edit-id').value = "";
+        document.getElementById('form-name').value = "";
+        document.getElementById('form-role').value = "";
+        document.getElementById('form-salary').value = "";
+        document.getElementById('form-charge').value = "45";
+        document.getElementById('form-tjm-app').value = "";
+        calculateTJM();
+    }
+}
+
+function closeModal() { document.getElementById('memberModal').classList.remove('active'); }
+
+function editPerson(el) {
+    const row = el.closest('.list-item-row');
+    document.getElementById('modalTitle').innerText = "Modifier le membre";
+    document.getElementById('edit-id').value = row.dataset.id;
+    document.getElementById('form-name').value = row.dataset.name;
+    document.getElementById('form-role').value = row.dataset.role;
+    document.getElementById('form-category').value = row.dataset.category;
+    document.getElementById('form-salary').value = row.dataset.salary;
+    document.getElementById('form-charge').value = parseFloat(row.dataset.charge) * 100;
+    document.getElementById('form-tjm-app').value = row.dataset.tjmApp;
+    calculateTJM();
+    openModal(true);
+}
+
+function saveMember() {
+    const name = document.getElementById('form-name').value;
+    if(!name) return;
+    closeModal();
+    location.reload(); // Simplified — would POST in production
+}
+
+function removeItem(el) {
+    if(confirm("Supprimer ce membre ?")) {
+        el.closest('tr').style.opacity = '0';
+        setTimeout(() => el.closest('tr').remove(), 200);
+    }
+}
+</script>
+{% endblock %}

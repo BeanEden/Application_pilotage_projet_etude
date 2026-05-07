@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Dashboard NovaRetail</h1>
+        <p class="subtitle">Suivi du projet technique M2 Big Data — Sup de Vinci 2026.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-label">Tâches</div>
+        <div class="stat-value">14</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Sprints</div>
+        <div class="stat-value">4</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Collaborateurs</div>
+        <div class="stat-value">3</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Semaines</div>
+        <div class="stat-value">10</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+    <div class="card">
+        <h2>État d'avancement global</h2>
+        <div style="height: 10px; background: var(--border-light); border-radius: 99px; margin: 1.25rem 0 0.75rem;">
+            <div style="width: 30%; height: 100%; background: var(--accent-vivid); border-radius: 99px; transition: width 0.5s ease;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <span style="font-size: 0.85rem; color: var(--text-secondary);">Sprint 1 en cours</span>
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--accent);">30%</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Prochains Jalons</h2>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i class="ph-fill ph-check-circle" style="color: var(--success); font-size: 1.2rem;"></i>
+                <span style="font-size: 0.9rem;">Cadrage du projet</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i class="ph ph-circle" style="color: var(--border); font-size: 1.2rem;"></i>
+                <span style="font-size: 0.9rem; color: var(--text-secondary);">Architecture & Documentation (Liv. A)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i class="ph ph-circle" style="color: var(--border); font-size: 1.2rem;"></i>
+                <span style="font-size: 0.9rem; color: var(--text-secondary);">Modélisation données (Liv. B)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 0;">
+    <h2>Résumé du Projet</h2>
+    <p style="margin-bottom: 1.25rem;">Ce projet vise à mettre en place une architecture data moderne pour l'analyse des ventes NovaRetail, en exploitant <strong>Microsoft Fabric</strong> (pipeline Médaillon Bronze/Silver/Gold), <strong>Docling</strong> pour l'extraction documentaire, et <strong>Power BI</strong> pour la visualisation interactive.</p>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('main.contexte') }}" class="btn btn-primary" style="text-decoration: none;">Voir le contexte</a>
+        <a href="{{ url_for('main.backlog') }}" class="btn btn-secondary" style="text-decoration: none;">Explorer le backlog</a>
+    </div>
+</div>
+{% endblock %}
