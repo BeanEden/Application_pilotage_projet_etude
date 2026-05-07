@@ -22,7 +22,7 @@ wheels/
 *.egg
 venv/
 ENV/
-
+BonCommande/
 # Data and Binaries
 *.pdf
 *.docx
