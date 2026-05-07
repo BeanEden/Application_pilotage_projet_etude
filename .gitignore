@@ -28,6 +28,7 @@ ENV/
 *.docx
 *.xlsx
 *.xls
+*.zip
 
 # Specifically keep JSON data files
 !data/*.json
