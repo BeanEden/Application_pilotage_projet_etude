@@ -1,0 +1,789 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Architectures du Projet</h1>
+        <p class="subtitle">Gestion de plusieurs schémas techniques indépendants.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary" onclick="exportArchPDF()"><i class="ph ph-file-pdf"></i> Exporter en PDF</button>
+        <button class="btn btn-primary" onclick="openArchModal()">
+            <i class="ph ph-plus"></i> Nouvelle architecture
+        </button>
+    </div>
+</div>
+
+<div id="architectures-list">
+    {% for arch in steps %}
+    <div class="arch-section card" id="arch-{{ arch.id }}">
+        <div class="arch-header">
+            <div class="arch-title-group">
+                <i class="ph ph-intersect-three"></i>
+                <h2 class="editable-title">{{ arch.name }}</h2>
+            </div>
+            <div class="arch-controls">
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="adjustZoom('{{ arch.id }}', -0.1)" title="Dézoomer"><i class="ph ph-minus"></i></button>
+                    <span class="zoom-level" id="zoom-val-{{ arch.id }}">100%</span>
+                    <button class="zoom-btn" onclick="adjustZoom('{{ arch.id }}', 0.1)" title="Zoomer"><i class="ph ph-plus"></i></button>
+                    <button class="zoom-btn" onclick="resetZoom('{{ arch.id }}')" title="Réinitialiser"><i class="ph ph-arrows-out"></i></button>
+                </div>
+                <div class="divider"></div>
+                <button class="btn btn-secondary btn-sm" onclick="openStepModal('{{ arch.id }}')">
+                    <i class="ph ph-plus"></i> Ajouter une étape
+                </button>
+                <button class="btn-icon text-danger" onclick="deleteArch('{{ arch.id }}')" title="Supprimer l'architecture">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="architecture-schema-wrapper">
+            <div class="architecture-schema-container" id="container-{{ arch.id }}" style="transform: scale(1); transform-origin: left center;">
+                <div class="schema-line"></div>
+                
+                {% if arch.phases %}
+                    <div class="schema-items">
+                    {% for phase in arch.phases %}
+                        {% set cat_hash = phase.name|length % 6 %}
+                        {% set colors = ['#6366f1', '#0a84a0', '#8944ab', '#248a3d', '#ff9f0a', '#5ac8fa'] %}
+                        {% set phase_color = colors[cat_hash] %}
+                        
+                        <div class="step-phase" style="--phase-color: {{ phase_color }}; border-left-color: var(--phase-color);">
+                            <div class="phase-label" style="border-color: var(--phase-color); color: var(--phase-color);">{{ phase.name }}</div>
+                            <div class="phase-steps">
+                                {% for sub in phase.subcategories %}
+                                    <div class="sub-phase">
+                                        {% if sub.name %}<div class="sub-phase-label" style="color: var(--phase-color); opacity: 0.8;">{{ sub.name }}</div>{% endif %}
+                                        <div class="sub-phase-items">
+                                            {% for step in sub.steps %}
+                                            <div class="schema-node" id="step-{{ step.id }}">
+                                                <div class="node-point" onclick="openStepModal('{{ arch.id }}', '{{ step.id }}')" style="border-color: var(--phase-color);">
+                                                    <span class="node-number" style="color: var(--phase-color);">{{ loop.index }}</span>
+                                                </div>
+                                                
+                                                <div class="node-card card" style="border-top: 4px solid var(--phase-color);">
+                                                    <div class="step-header">
+                                                        <span class="badge" style="background: var(--phase-color); color: white;">{{ step.category }}</span>
+                                                        <div class="step-actions">
+                                                            <i class="ph ph-pencil-simple edit-btn" onclick="openStepModal('{{ arch.id }}', '{{ step.id }}')"></i>
+                                                            <i class="ph ph-trash remove-btn" onclick="deleteStep('{{ arch.id }}', '{{ step.id }}')"></i>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <h3 class="step-title">{{ step.title }}</h3>
+                                                    <p class="step-summary">{{ step.summary }}</p>
+                                                    
+                                                    {% set imgs = step.images if step.images else ([step.image] if step.image else []) %}
+                                                    {% if imgs %}
+                                                    <div class="step-images-container" style="display: flex; gap: 8px; overflow-x: auto; margin: 1rem 0; padding-bottom: 8px;">
+                                                        {% for img_url in imgs %}
+                                                        <div class="step-image-wrapper" style="flex: 0 0 auto; width: 140px; height: 100px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-light); background: var(--bg-body); display: flex; align-items: center; justify-content: center;">
+                                                            <img src="{{ img_url }}" alt="{{ step.title }}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                    {% endif %}
+                                                    
+                                                    <div class="step-details-toggle" onclick="this.nextElementSibling.classList.toggle('active')" style="color: var(--phase-color);">
+                                                        Détails <i class="ph ph-caret-down"></i>
+                                                    </div>
+                                                    <div class="step-details-content">
+                                                        <p>{{ step.detail }}</p>
+                                                        {% if step.previous_step_id %}
+                                                        <div class="step-dependency">
+                                                            <i class="ph ph-arrow-left" style="color: var(--phase-color);"></i>
+                                                            <span>Après : {{ step.previous_step_title }}</span>
+                                                        </div>
+                                                        {% else %}
+                                                        <div class="step-dependency" style="color: var(--success); font-weight: 600;">
+                                                            <i class="ph ph-flag-banner"></i>
+                                                            <span>Première étape</span>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state" style="text-align: center; width: 100%; color: var(--text-secondary);">
+                        <p>Aucune étape dans cette architecture.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Architecture -->
+<div id="archModal" class="modal">
+    <div class="modal-content">
+        <h2>Nouvelle Architecture</h2>
+        <form id="archForm">
+            <div class="form-group">
+                <label for="archName">Nom de l'architecture</label>
+                <input type="text" id="archName" class="form-control" placeholder="ex: Flux de données Power BI" required>
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label for="archCategory">Catégorie</label>
+                    <input type="text" id="archCategory" class="form-control" placeholder="ex: Data Pipeline" required>
+                </div>
+                <div class="form-group">
+                    <label for="archSubcategory">Sous-catégorie</label>
+                    <input type="text" id="archSubcategory" class="form-control" placeholder="ex: Azure Fabric">
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('archModal')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Créer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Step (Modified to include archId) -->
+<div id="stepModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <h2 id="modalTitle">Ajouter une étape</h2>
+        <form id="stepForm">
+            <input type="hidden" id="stepArchId">
+            <input type="hidden" id="stepId">
+            
+            <div class="form-group">
+                <label for="title">Titre de l'étape</label>
+                <input type="text" id="title" class="form-control" placeholder="ex: Extraction Docling" required>
+            </div>
+            
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label for="category">Catégorie</label>
+                    <input type="text" id="category" class="form-control" placeholder="ex: Ingestion" required>
+                </div>
+                <div class="form-group">
+                    <label for="subcategory">Sous-catégorie</label>
+                    <input type="text" id="subcategory" class="form-control" placeholder="ex: PDF Processing">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="summary">Description sommaire</label>
+                <input type="text" id="summary" class="form-control" placeholder="Une phrase courte" required>
+            </div>
+
+            <div class="form-group">
+                <label for="detail">Description détaillée</label>
+                <textarea id="detail" class="form-control" rows="4" placeholder="Détails techniques..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Images de l'étape</label>
+                <div id="dropZone" class="upload-zone">
+                    <i class="ph ph-cloud-arrow-up"></i>
+                    <p>Glissez-déposez ou cliquez ici pour ajouter des images</p>
+                    <input type="file" id="fileInput" hidden accept="image/*" multiple>
+                </div>
+                <div id="imagesPreviewList" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 1rem; padding-bottom: 8px;">
+                    <!-- JS injects previews here -->
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 0.5rem;">
+                    <input type="text" id="imageUrlInput" class="form-control" placeholder="Ou collez une URL">
+                    <button type="button" class="btn btn-secondary" onclick="addImageFromUrl()">Ajouter</button>
+                </div>
+                <div id="uploadStatus" style="font-size: 0.8rem; margin-top: 0.4rem;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="previous_step_id">Étape précédente</label>
+                <select id="previous_step_id" class="form-control">
+                    <!-- Dynamic options based on current arch -->
+                </select>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('stepModal')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.arch-section {
+    padding: 0;
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+}
+
+.step-phase {
+    display: flex;
+    flex-direction: column;
+    border-left: 2px dashed var(--border);
+    padding-left: 30px;
+    margin-right: 30px;
+    position: relative;
+}
+
+.step-phase:first-child {
+    border-left: none;
+    padding-left: 0;
+}
+
+.phase-label {
+    position: absolute;
+    top: -40px;
+    left: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent-vivid);
+    background: var(--bg-card);
+    padding: 2px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    z-index: 10;
+}
+
+.phase-steps {
+    display: flex;
+    gap: 40px;
+    align-items: center;
+}
+
+.sub-phase {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.sub-phase-label {
+    position: absolute;
+    top: 30px;
+    left: 0;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-style: italic;
+    white-space: nowrap;
+}
+
+.sub-phase-items {
+    display: flex;
+    gap: 40px;
+}
+
+.arch-header {
+    padding: 1.25rem 2rem;
+    background: var(--bg-body);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.arch-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.arch-title-group i {
+    font-size: 1.5rem;
+    color: var(--accent-vivid);
+}
+
+.arch-title-group h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.arch-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.zoom-btn {
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-radius: 6px;
+}
+
+.zoom-btn:hover {
+    background: var(--bg-body);
+    color: var(--accent-vivid);
+}
+
+.zoom-level {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0 8px;
+    min-width: 50px;
+    text-align: center;
+}
+
+.divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+}
+
+.architecture-schema-wrapper {
+    overflow-x: auto;
+    padding: 3rem 0;
+    min-height: 500px;
+}
+
+.architecture-schema-container {
+    position: relative;
+    min-width: max-content;
+    padding: 0 10rem;
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s ease-out;
+}
+
+.schema-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--border) 0%, var(--accent-vivid) 50%, var(--border) 100%);
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.schema-items {
+    display: flex;
+    gap: 40px;
+    z-index: 2;
+}
+
+.schema-node {
+    position: relative;
+    width: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.schema-node:nth-child(odd) { flex-direction: column-reverse; }
+
+.node-point {
+    width: 52px;
+    height: 52px;
+    background: var(--bg-card);
+    border: 4px solid var(--accent-vivid);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    box-shadow: var(--shadow-md);
+    margin: 30px 0;
+}
+
+.node-number { font-weight: 800; color: var(--accent); }
+
+.node-card {
+    width: 100%;
+    padding: 1.5rem;
+    position: relative;
+    border-radius: 16px;
+}
+
+.schema-node:nth-child(even) .node-card::before {
+    content: ''; position: absolute; top: -30px; left: 50%; width: 2px; height: 30px; background: var(--accent-vivid);
+}
+
+.schema-node:nth-child(odd) .node-card::after {
+    content: ''; position: absolute; bottom: -30px; left: 50%; width: 2px; height: 30px; background: var(--accent-vivid);
+}
+
+.step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.step-title { font-size: 1.1rem; color: var(--accent); margin-bottom: 0.5rem; }
+.step-summary { font-size: 0.85rem; color: var(--text-primary); font-weight: 500; margin-bottom: 1rem; }
+.step-details-toggle { font-size: 0.75rem; font-weight: 700; color: var(--accent-vivid); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.step-details-content { display: none; padding-top: 1rem; margin-top: 0.5rem; border-top: 1px solid var(--border-light); font-size: 0.85rem; color: var(--text-secondary); }
+.step-details-content.active { display: block; }
+.step-dependency { margin-top: 1rem; font-size: 0.75rem; display: flex; align-items: center; gap: 6px; }
+
+.upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: var(--bg-body);
+}
+
+.upload-zone i { font-size: 1.5rem; display: block; margin-bottom: 0.25rem; }
+.upload-zone p { font-size: 0.75rem; margin: 0; }
+
+.upload-preview {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(29, 29, 31, 0.6);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+}
+.modal.active { display: flex; }
+
+/* Styles temporaires pour l'export PDF */
+.pdf-export-mode {
+    width: max-content !important;
+    min-width: 100% !important;
+}
+.pdf-export-mode .arch-section,
+.pdf-export-mode .architecture-schema-wrapper {
+    overflow: visible !important;
+    width: max-content !important;
+    min-width: 100% !important;
+}
+</style>
+
+<script>
+let data = {{ steps|tojson }};
+const zooms = {};
+let currentStepImages = [];
+
+function adjustZoom(archId, delta) {
+    if (!zooms[archId]) zooms[archId] = 1;
+    zooms[archId] = Math.max(0.3, Math.min(2, zooms[archId] + delta));
+    applyZoom(archId);
+}
+
+function resetZoom(archId) {
+    zooms[archId] = 1;
+    applyZoom(archId);
+}
+
+function applyZoom(archId) {
+    const container = document.getElementById('container-' + archId);
+    const zoomVal = document.getElementById('zoom-val-' + archId);
+    if (container) {
+        container.style.transform = `scale(${zooms[archId]})`;
+        zoomVal.innerText = Math.round(zooms[archId] * 100) + '%';
+    }
+}
+
+function openArchModal() {
+    document.getElementById('archModal').classList.add('active');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+function openStepModal(archId, stepId = null) {
+    const modal = document.getElementById('stepModal');
+    const form = document.getElementById('stepForm');
+    const titleEl = document.getElementById('modalTitle');
+    const prevSelect = document.getElementById('previous_step_id');
+    
+    form.reset();
+    document.getElementById('stepArchId').value = archId;
+    document.getElementById('stepId').value = '';
+    
+    currentStepImages = [];
+    
+    // Fill previous steps based on current arch
+    const arch = data.find(a => a.id === archId);
+    prevSelect.innerHTML = '<option value="">Aucune (Première étape)</option>';
+    arch.steps.forEach(s => {
+        if (s.id !== stepId) {
+            prevSelect.innerHTML += `<option value="${s.id}">${s.title}</option>`;
+        }
+    });
+
+    if (stepId) {
+        const step = arch.steps.find(s => s.id === stepId);
+        if (step) {
+            titleEl.innerText = "Modifier l'étape";
+            document.getElementById('stepId').value = step.id;
+            document.getElementById('title').value = step.title;
+            document.getElementById('category').value = step.category;
+            document.getElementById('subcategory').value = step.subcategory || '';
+            document.getElementById('summary').value = step.summary;
+            document.getElementById('detail').value = step.detail || '';
+            document.getElementById('previous_step_id').value = step.previous_step_id || '';
+            
+            if (step.images && Array.isArray(step.images)) {
+                currentStepImages = [...step.images];
+            } else if (step.image) {
+                currentStepImages = [step.image];
+            }
+        }
+    } else {
+        titleEl.innerText = "Ajouter une étape";
+    }
+    
+    renderImagePreviews();
+    modal.classList.add('active');
+    setupUpload();
+}
+
+function renderImagePreviews() {
+    const list = document.getElementById('imagesPreviewList');
+    list.innerHTML = '';
+    currentStepImages.forEach((url, idx) => {
+        list.innerHTML += `
+            <div style="position: relative; flex: 0 0 auto; width: 100px; height: 80px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--bg-body); display: flex; align-items: center; justify-content: center;">
+                <img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                <button type="button" class="btn-icon text-danger" onclick="removeImageAt(${idx})" style="position: absolute; top: 2px; right: 2px; background: rgba(255,255,255,0.8); border-radius: 50%; padding: 2px;">
+                    <i class="ph ph-x" style="font-size: 0.8rem;"></i>
+                </button>
+            </div>
+        `;
+    });
+}
+
+function removeImageAt(idx) {
+    currentStepImages.splice(idx, 1);
+    renderImagePreviews();
+}
+
+function addImageFromUrl() {
+    const input = document.getElementById('imageUrlInput');
+    if (input.value.trim()) {
+        currentStepImages.push(input.value.trim());
+        input.value = '';
+        renderImagePreviews();
+    }
+}
+
+// Logic to add a new architecture
+document.getElementById('archForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const newArch = {
+        id: 'arch_' + Date.now(),
+        name: document.getElementById('archName').value,
+        category: document.getElementById('archCategory').value,
+        subcategory: document.getElementById('archSubcategory').value,
+        steps: []
+    };
+    data.push(newArch);
+    await saveAll();
+    closeModal('archModal');
+};
+
+async function deleteArch(archId) {
+    if (!confirm('Supprimer toute cette architecture ?')) return;
+    data = data.filter(a => a.id !== archId);
+    await saveAll();
+}
+
+async function deleteStep(archId, stepId) {
+    if (!confirm('Supprimer cette étape ?')) return;
+    const arch = data.find(a => a.id === archId);
+    arch.steps = arch.steps.filter(s => s.id !== stepId);
+    arch.steps.forEach(s => { if (s.previous_step_id === stepId) s.previous_step_id = ''; });
+    await saveAll();
+}
+
+document.getElementById('stepForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const archId = document.getElementById('stepArchId').value;
+    const stepId = document.getElementById('stepId').value || 'step_' + Date.now();
+    const prevId = document.getElementById('previous_step_id').value;
+    
+    const arch = data.find(a => a.id === archId);
+    const prevStep = arch.steps.find(s => s.id === prevId);
+    
+    const newStep = {
+        id: stepId,
+        title: document.getElementById('title').value,
+        category: document.getElementById('category').value,
+        subcategory: document.getElementById('subcategory').value,
+        summary: document.getElementById('summary').value,
+        detail: document.getElementById('detail').value,
+        images: currentStepImages,
+        previous_step_id: prevId,
+        previous_step_title: prevStep ? prevStep.title : ''
+    };
+    
+    const index = arch.steps.findIndex(s => s.id === stepId);
+    if (index > -1) arch.steps[index] = newStep;
+    else arch.steps.push(newStep);
+    
+    await saveAll();
+    closeModal('stepModal');
+};
+
+async function saveAll() {
+    try {
+        const response = await fetch('/api/save-architecture', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (response.ok) window.location.reload();
+        else alert('Erreur de sauvegarde');
+    } catch (error) {
+        alert('Erreur réseau');
+    }
+}
+
+function setupUpload() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const imageInput = document.getElementById('image');
+    const status = document.getElementById('uploadStatus');
+
+    dropZone.onclick = () => fileInput.click();
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+    dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            Array.from(e.dataTransfer.files).forEach(f => handleUpload(f));
+        }
+    };
+    fileInput.onchange = () => { 
+        if (fileInput.files.length) {
+            Array.from(fileInput.files).forEach(f => handleUpload(f));
+            fileInput.value = '';
+        }
+    };
+
+    async function handleUpload(file) {
+        status.innerText = "Téléchargement...";
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const response = await fetch('/api/upload-image', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.status === 'success') {
+                currentStepImages.push(result.url);
+                renderImagePreviews();
+                status.innerText = "OK !";
+                status.style.color = "var(--success)";
+                setTimeout(() => status.innerText = "", 2000);
+            }
+        } catch (e) { status.innerText = "Erreur"; }
+    }
+}
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('active');
+    }
+}
+
+function exportArchPDF() {
+    const element = document.getElementById('architectures-list');
+    
+    // Setup for full width capture
+    const wrappers = document.querySelectorAll('.architecture-schema-wrapper');
+    const containers = document.querySelectorAll('.architecture-schema-container');
+    const controls = document.querySelectorAll('.arch-controls');
+    
+    element.classList.add('pdf-export-mode');
+    
+    // Reset all scroll positions to avoid left gap
+    window.scrollTo(0, 0);
+    wrappers.forEach(w => {
+        w.scrollLeft = 0;
+    });
+
+    containers.forEach(c => {
+        c.style.transition = 'none'; // Disable animation to prevent mid-frame capture
+        c.style.transform = 'scale(1)'; // reset zoom for high res capture
+        c.style.padding = '0'; // no extra padding
+    });
+    
+    controls.forEach(c => c.style.display = 'none');
+
+    // Force DOM update
+    document.body.offsetHeight;
+    const computedWidth = element.scrollWidth + 40;
+
+    // Create a loader
+    const loader = document.createElement('div');
+    loader.innerHTML = '<i class="ph ph-spinner-gap" style="animation:spin 1s linear infinite; font-size:3rem;"></i><div style="margin-top:1rem;">Génération du PDF...</div>';
+    loader.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.9);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;font-weight:bold;font-size:1.5rem;color:var(--accent);';
+    document.body.appendChild(loader);
+
+    const opt = {
+        margin:       10,
+        filename:     'Architecture_NovaRetail.pdf',
+        image:        { type: 'jpeg', quality: 1 },
+        html2canvas:  { 
+            scale: 2, 
+            useCORS: true, 
+            width: computedWidth, 
+            windowWidth: computedWidth
+        },
+        jsPDF:        { unit: 'mm', format: 'a3', orientation: 'landscape' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        // Restore UI
+        element.classList.remove('pdf-export-mode');
+        wrappers.forEach(w => w.style.overflowX = 'auto');
+        containers.forEach(c => {
+            const archId = c.id.replace('container-', '');
+            c.style.transition = 'transform 0.2s ease-out';
+            c.style.transform = `scale(${zooms[archId] || 1})`;
+            c.style.padding = '0 10rem';
+        });
+        controls.forEach(c => c.style.display = 'flex');
+        document.body.removeChild(loader);
+    }).catch(err => {
+        console.error(err);
+        document.body.removeChild(loader);
+        alert("Erreur lors de l'export.");
+    });
+}
+</script>
+{% endblock %}

@@ -1,5 +1,50 @@
 [
-    {"id": 1, "desc": "Licences Microsoft Fabric (F64)", "cat": "Infrastructure", "amount": 4200, "attr_type": "Global", "attr_val": "Projet"},
-    {"id": 2, "desc": "Abonnement OpenAI API", "cat": "Logiciel", "amount": 150, "attr_type": "Bucket", "attr_val": "Pipeline"},
-    {"id": 3, "desc": "Laptop GPU Haute Performance", "cat": "Matériel", "amount": 2500, "attr_type": "Collaborator", "attr_val": "Ludovic PICARD"}
+    {
+        "id": "1778178036438",
+        "desc": "Microsoft Fabric",
+        "cat": "Infrastructure",
+        "amount": 30.109589041095887,
+        "attr_type": "Global",
+        "attr_val": "Projet",
+        "charge_type": "direct",
+        "purchase_price": 157,
+        "amort_years": 3,
+        "soft_recurrence": "annual",
+        "soft_collabs": [],
+        "rebill_type": "flat",
+        "rebill_value": 50,
+        "rebill_amount": 50
+    },
+    {
+        "id": "1778178531099",
+        "desc": "Microsoft Copilot Business",
+        "cat": "Infrastructure",
+        "amount": 35.873850197109064,
+        "attr_type": "Collaborator",
+        "attr_val": "Jean-Corentin LOIRAT, Clément METOIS, Ludovic PICARD",
+        "charge_type": "direct",
+        "purchase_price": 15.6,
+        "amort_years": 3,
+        "soft_recurrence": "monthly",
+        "soft_collabs": [],
+        "rebill_type": "flat",
+        "rebill_value": 50,
+        "rebill_amount": 50
+    },
+    {
+        "id": "1778178936662",
+        "desc": "Laptop High GPU",
+        "cat": "Matériel",
+        "amount": 95.8904109589041,
+        "attr_type": "Collaborator",
+        "attr_val": "Jean-Corentin LOIRAT, Clément METOIS, Ludovic PICARD",
+        "charge_type": "amortized",
+        "purchase_price": 2500,
+        "amort_years": 5,
+        "soft_recurrence": "flat",
+        "soft_collabs": [],
+        "rebill_type": "flat",
+        "rebill_value": 150,
+        "rebill_amount": 150
+    }
 ]

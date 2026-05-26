@@ -1,156 +1,279 @@
 [
     {
-        "id": "C0-1",
-        "task": "Analyse sujet & constitution équipe",
-        "sprint": 1,
-        "duration": "1 sem",
-        "assignees": ["Jean-Corentin LOIRAT", "Clément METOIS", "Ludovic PICARD"],
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Clément METOIS",
+            "Ludovic PICARD"
+        ],
+        "bucket": "Cadrage",
         "deps": "-",
-        "bucket": "Cadrage",
+        "duration": "1 sem",
+        "id": "C0-1",
+        "raci": {
+            "cl": "R",
+            "jc": "A/R",
+            "lu": "R"
+        },
+        "sprint": 1,
         "start_week": 0,
-        "raci": {"jc": "A/R", "cl": "R", "lu": "R"}
+        "task": "Analyse sujet & constitution équipe"
     },
     {
-        "id": "C0-5",
-        "task": "Setup Fabric, Lakehouse, planning",
-        "sprint": 1,
-        "duration": "1 sem",
-        "assignees": ["Jean-Corentin LOIRAT", "Ludovic PICARD"],
-        "deps": "C0-1",
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Ludovic PICARD"
+        ],
         "bucket": "Cadrage",
+        "deps": "C0-1",
+        "duration": "1 sem",
+        "id": "C0-5",
+        "raci": {
+            "cl": "I",
+            "jc": "A/R",
+            "lu": "R"
+        },
+        "sprint": 1,
         "start_week": 1,
-        "raci": {"jc": "A/R", "cl": "I", "lu": "R"}
+        "task": "Setup Fabric, Lakehouse, planning"
     },
     {
-        "id": "A1-5",
-        "task": "Architecture & Documentation (Liv. A)",
-        "sprint": 1,
-        "duration": "2 sem",
-        "assignees": ["Jean-Corentin LOIRAT", "Clément METOIS"],
-        "deps": "C0-5",
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Clément METOIS"
+        ],
         "bucket": "Architecture",
-        "start_week": 1,
-        "raci": {"jc": "A/R", "cl": "R", "lu": "C"}
-    },
-    {
-        "id": "B1-5",
-        "task": "Modélisation données (Liv. B)",
+        "deps": "C0-5",
+        "duration": "2 sem",
+        "id": "A1-5",
+        "raci": {
+            "cl": "R",
+            "jc": "A/R",
+            "lu": "C"
+        },
         "sprint": 1,
-        "duration": "2 sem",
-        "assignees": ["Ludovic PICARD", "Clément METOIS"],
-        "deps": "A1-5",
-        "bucket": "Modélisation",
         "start_week": 1,
-        "raci": {"jc": "C", "cl": "R", "lu": "A/R"}
+        "task": "Architecture & Documentation (Liv. A)"
     },
     {
+        "assignees": [
+            "Ludovic PICARD",
+            "Clément METOIS"
+        ],
+        "bucket": "Modélisation",
+        "deps": "A1-5",
+        "duration": "2 sem",
+        "id": "B1-5",
+        "raci": {
+            "cl": "R",
+            "jc": "C",
+            "lu": "A/R"
+        },
+        "sprint": 1,
+        "start_week": 1,
+        "task": "Modélisation données (Liv. B)"
+    },
+    {
+        "assignees": [
+            "Clément METOIS"
+        ],
+        "bucket": "Pipeline",
+        "deps": "B1-5",
+        "duration": "1 sem",
         "id": "C1",
-        "task": "NB_01 Bronze (Fabric)",
+        "raci": {
+            "cl": "A/R",
+            "jc": "I",
+            "lu": "I"
+        },
         "sprint": 2,
-        "duration": "1 sem",
-        "assignees": ["Clément METOIS"],
-        "deps": "B1-5",
-        "bucket": "Pipeline",
         "start_week": 2,
-        "raci": {"jc": "I", "cl": "A/R", "lu": "I"}
+        "task": "NB_01 Bronze (Fabric)"
     },
     {
-        "id": "C2-3",
-        "task": "NB_02 Silver + NB_03 Gold (Fabric)",
-        "sprint": 2,
-        "duration": "2 sem",
-        "assignees": ["Clément METOIS", "Jean-Corentin LOIRAT"],
+        "assignees": [
+            "Clément METOIS",
+            "Jean-Corentin LOIRAT"
+        ],
+        "bucket": "Pipeline",
         "deps": "C1",
-        "bucket": "Pipeline",
+        "duration": "2 sem",
+        "id": "C2-3",
+        "raci": {
+            "cl": "A/R",
+            "jc": "R",
+            "lu": "I"
+        },
+        "sprint": 2,
         "start_week": 3,
-        "raci": {"jc": "R", "cl": "A/R", "lu": "I"}
+        "task": "NB_02 Silver + NB_03 Gold (Fabric)"
     },
     {
-        "id": "CL-1-4",
-        "task": "Docker + MinIO + Airflow setup",
-        "sprint": 2,
-        "duration": "2 sem",
-        "assignees": ["Clément METOIS"],
+        "assignees": [
+            "Clément METOIS"
+        ],
+        "bucket": "Stack Alternative",
         "deps": "B1-5",
-        "bucket": "Stack Alternative",
-        "start_week": 2,
-        "raci": {"jc": "I", "cl": "A/R", "lu": "I"}
-    },
-    {
-        "id": "C4",
-        "task": "Data Pipeline Fabric (orchestration)",
+        "duration": "2 sem",
+        "id": "CL-1-4",
+        "raci": {
+            "cl": "A/R",
+            "jc": "I",
+            "lu": "I"
+        },
         "sprint": 2,
-        "duration": "1 sem",
-        "assignees": ["Clément METOIS"],
-        "deps": "C2-3",
+        "start_week": 2,
+        "task": "Docker + MinIO + Airflow setup"
+    },
+    {
+        "assignees": [
+            "Clément METOIS"
+        ],
         "bucket": "Pipeline",
+        "deps": "C2-3",
+        "duration": "1 sem",
+        "id": "C4",
+        "raci": {
+            "cl": "A/R",
+            "jc": "C",
+            "lu": "I"
+        },
+        "sprint": 2,
         "start_week": 4,
-        "raci": {"jc": "C", "cl": "A/R", "lu": "I"}
+        "task": "Data Pipeline Fabric (orchestration)"
     },
     {
-        "id": "D1",
-        "task": "Connexion Power BI DirectLake",
-        "sprint": 3,
-        "duration": "1 sem",
-        "assignees": ["Jean-Corentin LOIRAT"],
+        "assignees": [
+            "Jean-Corentin LOIRAT"
+        ],
+        "bucket": "Power BI",
         "deps": "C4",
-        "bucket": "Power BI",
+        "duration": "1 sem",
+        "id": "D1",
+        "raci": {
+            "cl": "I",
+            "jc": "A/R",
+            "lu": "C"
+        },
+        "sprint": 3,
         "start_week": 5,
-        "raci": {"jc": "A/R", "cl": "I", "lu": "C"}
+        "task": "Connexion Power BI DirectLake"
     },
     {
-        "id": "D2-7",
-        "task": "Pages dashboard + KPI + mise en forme",
-        "sprint": 3,
-        "duration": "2 sem",
-        "assignees": ["Ludovic PICARD", "Jean-Corentin LOIRAT"],
-        "deps": "D1",
+        "assignees": [
+            "Ludovic PICARD",
+            "Jean-Corentin LOIRAT"
+        ],
         "bucket": "Power BI",
-        "start_week": 6,
-        "raci": {"jc": "C", "cl": "I", "lu": "A/R"}
-    },
-    {
-        "id": "CL-7-9",
-        "task": "Superset dashboards + doc comparative",
+        "deps": "D1",
+        "duration": "2 sem",
+        "id": "D2-7",
+        "raci": {
+            "cl": "I",
+            "jc": "C",
+            "lu": "A/R"
+        },
         "sprint": 3,
-        "duration": "1 sem",
-        "assignees": ["Clément METOIS"],
-        "deps": "CL-1-4",
+        "start_week": 6,
+        "task": "Pages dashboard + KPI + mise en forme"
+    },
+    {
+        "assignees": [
+            "Clément METOIS"
+        ],
         "bucket": "Stack Alternative",
-        "start_week": 6,
-        "raci": {"jc": "I", "cl": "A/R", "lu": "I"}
-    },
-    {
-        "id": "E1-7",
-        "task": "Rédaction sections rapport",
-        "sprint": 4,
-        "duration": "2 sem",
-        "assignees": ["Jean-Corentin LOIRAT", "Clément METOIS", "Ludovic PICARD"],
-        "deps": "D2-7",
-        "bucket": "Rapport",
-        "start_week": 6,
-        "raci": {"jc": "A/R", "cl": "R", "lu": "R"}
-    },
-    {
-        "id": "E8",
-        "task": "Assemblage & relecture rapport final",
-        "sprint": 4,
+        "deps": "CL-1-4",
         "duration": "1 sem",
-        "assignees": ["Jean-Corentin LOIRAT", "Clément METOIS", "Ludovic PICARD"],
-        "deps": "E1-7",
-        "bucket": "Rapport",
-        "start_week": 8,
-        "raci": {"jc": "A/R", "cl": "R", "lu": "R"}
+        "id": "CL-7-9",
+        "raci": {
+            "cl": "A/R",
+            "jc": "I",
+            "lu": "I"
+        },
+        "sprint": 3,
+        "start_week": 6,
+        "task": "Superset dashboards + doc comparative"
     },
     {
-        "id": "F1-5",
-        "task": "Support slides + répétition soutenance",
-        "sprint": 4,
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Clément METOIS",
+            "Ludovic PICARD"
+        ],
+        "bucket": "Rapport",
+        "deps": "D2-7",
         "duration": "2 sem",
-        "assignees": ["Jean-Corentin LOIRAT", "Clément METOIS", "Ludovic PICARD"],
-        "deps": "E8",
+        "id": "E1-7",
+        "raci": {
+            "cl": "R",
+            "jc": "A/R",
+            "lu": "R"
+        },
+        "sprint": 4,
+        "start_week": 6,
+        "task": "Rédaction sections rapport"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Clément METOIS",
+            "Ludovic PICARD"
+        ],
+        "bucket": "Rapport",
+        "deps": "E1-7",
+        "duration": "1 sem",
+        "id": "E8",
+        "raci": {
+            "cl": "R",
+            "jc": "A/R",
+            "lu": "R"
+        },
+        "sprint": 4,
+        "start_week": 8,
+        "task": "Assemblage & relecture rapport final"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Clément METOIS",
+            "Ludovic PICARD"
+        ],
         "bucket": "Soutenance",
+        "deps": "E8",
+        "duration": "2 sem",
+        "id": "F1-5",
+        "raci": {
+            "cl": "R",
+            "jc": "R",
+            "lu": "A/R"
+        },
+        "sprint": 4,
         "start_week": 7,
-        "raci": {"jc": "R", "cl": "R", "lu": "A/R"}
+        "task": "Support slides + répétition soutenance"
+    },
+    {
+        "assignees": [
+            "Ludovic PICARD"
+        ],
+        "bucket": "Architecture",
+        "deps": "C0-5",
+        "duration": "1 sem",
+        "id": "T-9",
+        "sprint": 2,
+        "start_week": 2,
+        "task": "Liaison mail SharePoint via PowerAutomate",
+        "type": "Tâche additionnelle"
+    },
+    {
+        "assignees": [
+            "Ludovic PICARD"
+        ],
+        "bucket": "Architecture",
+        "deps": "C0-5",
+        "duration": "2 j",
+        "id": "T-10",
+        "sprint": 2,
+        "start_week": 2,
+        "task": "Ajouts de formats",
+        "type": "Évolution d'une tâche existante"
     }
 ]

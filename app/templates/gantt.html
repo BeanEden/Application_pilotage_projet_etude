@@ -4,7 +4,7 @@
 <div class="page-header">
     <div>
         <h1>Planning Gantt</h1>
-        <p class="subtitle">Séquençage temporel, dépendances et chemin critique.</p>
+        <p class="subtitle">Séquençage temporel, dépendances et chemin critique. Survoler une barre pour plus d'infos.</p>
     </div>
 </div>
 
@@ -61,19 +61,14 @@
     </div>
 </div>
 
-<div style="display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap;">
-    <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #64748b;"></div><span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Sprint 1</span></div>
-    <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #2563eb;"></div><span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Sprint 2</span></div>
-    <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #d97706;"></div><span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Sprint 3</span></div>
-    <div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #16a34a;"></div><span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Sprint 4</span></div>
-</div>
+<!-- Custom Tooltip Element -->
+<div id="gantt-tooltip" class="gantt-tooltip"></div>
 
 <script>
 const weeksCount = {{ weeks|length }};
 const rawTasks = {{ tasks|tojson }};
+const collaborators = {{ collaborators|tojson }};
 const sprintColors = {"1": "#64748b", "2": "#2563eb", "3": "#d97706", "4": "#16a34a"};
-
-// Critical Path logic (simplified for demonstration)
 const criticalIds = ["C0-1", "A1-1", "A1-2", "A1-5", "B1-5", "C1-1", "P1-1", "P2-1", "P2-2", "D1-1", "E1-1", "F1-1", "G1-1"];
 
 function renderGantt() {
@@ -114,6 +109,14 @@ function renderGantt() {
             const dur = t.duration.includes('2 sem') ? 2 : 1;
             const color = sprintColors[t.sprint] || '#64748b';
             
+            // Calculate cost for tooltip
+            let cost = 0;
+            const days = dur === 2 ? 10 : 5;
+            t.assignees.forEach(name => {
+                const co = collaborators.find(c => c.name === name);
+                if(co) cost += co.tjm_applied * days;
+            });
+
             const row = document.createElement('div');
             row.style.cssText = 'display: flex; border-bottom: 1px solid var(--border-light); height: 44px;';
             row.innerHTML = `
@@ -126,6 +129,8 @@ function renderGantt() {
                         ${Array(weeksCount).fill('<div style="border-right: 1px solid var(--border-light);"></div>').join('')}
                     </div>
                     <div id="bar-${t.id}" class="gantt-bar ${isCrit ? 'critical-anim' : ''}" 
+                         onmouseover="showTooltip(event, '${t.task}', '${t.assignees.join(', ')}', '${t.duration}', '${Math.round(cost).toLocaleString()} €')"
+                         onmouseout="hideTooltip()"
                          style="position: absolute; 
                                 left: calc((100% / ${weeksCount}) * ${t.start_week}); 
                                 width: calc((100% / ${weeksCount}) * ${dur}); 
@@ -141,38 +146,59 @@ function renderGantt() {
         });
     });
     
-    // Use a small delay to ensure bars are rendered before drawing SVG lines
     setTimeout(() => drawDependencies(tasks), 100);
 }
+
+function showTooltip(e, task, collab, duration, cost) {
+    const tooltip = document.getElementById('gantt-tooltip');
+    tooltip.innerHTML = `
+        <div style="font-weight: 800; color: var(--accent); margin-bottom: 4px; font-size: 0.85rem;">${task}</div>
+        <div style="display: flex; flex-direction: column; gap: 2px; font-size: 0.75rem;">
+            <div><span style="color: var(--text-secondary);">Collaborateurs:</span> <strong>${collab}</strong></div>
+            <div><span style="color: var(--text-secondary);">Durée:</span> <strong>${duration}</strong></div>
+            <div><span style="color: var(--text-secondary);">Coût Estimé:</span> <strong style="color: var(--accent);">${cost}</strong></div>
+        </div>
+    `;
+    tooltip.style.display = 'block';
+    moveTooltip(e);
+}
+
+function moveTooltip(e) {
+    const tooltip = document.getElementById('gantt-tooltip');
+    tooltip.style.left = (e.pageX + 15) + 'px';
+    tooltip.style.top = (e.pageY + 15) + 'px';
+}
+
+function hideTooltip() {
+    document.getElementById('gantt-tooltip').style.display = 'none';
+}
+
+document.addEventListener('mousemove', (e) => {
+    if (document.getElementById('gantt-tooltip').style.display === 'block') {
+        moveTooltip(e);
+    }
+});
 
 function drawDependencies(tasks) {
     const svg = document.getElementById('dep-svg');
     const scrollPane = document.getElementById('gantt-scroll-pane');
     svg.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="rgba(110,110,115,0.4)"/></marker></defs>';
-    
     const bRect = scrollPane.getBoundingClientRect();
     const scrollTop = scrollPane.scrollTop;
-
     tasks.forEach(t => {
         if(t.deps && t.deps !== '-') {
             t.deps.split(',').map(d => d.trim()).forEach(depId => {
                 const sBar = document.getElementById(`bar-${depId}`);
                 const eBar = document.getElementById(`bar-${t.id}`);
-                
                 if(sBar && eBar) {
                     const sr = sBar.getBoundingClientRect(), er = eBar.getBoundingClientRect();
-                    
-                    // Coordinates relative to the scroll pane
                     const x1 = sr.right - bRect.left;
                     const y1 = (sr.top - bRect.top) + sr.height/2 + scrollTop;
                     const x2 = er.left - bRect.left;
                     const y2 = (er.top - bRect.top) + er.height/2 + scrollTop;
-
-                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    // S-curve using Bezier
                     const cp1x = x1 + (x2 - x1) / 2;
                     const pathData = `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp1x} ${y2}, ${x2} ${y2}`;
-                    
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("d", pathData);
                     path.setAttribute("stroke", "rgba(110,110,115,0.25)");
                     path.setAttribute("stroke-width", "1.5");
@@ -185,32 +211,37 @@ function drawDependencies(tasks) {
     });
 }
 
-// Redraw on window resize or scroll
 window.addEventListener('resize', renderGantt);
-document.getElementById('gantt-scroll-pane').addEventListener('scroll', () => {
-    // We only need to redraw if markers move, but scroll pane handles SVG naturally if positioned correctly
-    // Actually, because SVG is inside the scroll pane, it moves with the content.
-});
-
 renderGantt();
 </script>
 
 <style>
+.gantt-tooltip {
+    position: absolute;
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    border: 1px solid var(--border);
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    min-width: 220px;
+}
 .critical-anim {
     animation: pulse-red 2s infinite;
     box-shadow: 0 0 10px rgba(255, 59, 48, 0.4) !important;
 }
-
 @keyframes pulse-red {
     0% { opacity: 0.85; }
     50% { opacity: 1; transform: scaleY(1.05); }
     100% { opacity: 0.85; }
 }
-
 .gantt-bar:hover {
     filter: brightness(1.1);
     cursor: pointer;
     z-index: 20;
+    transform: scaleY(1.1);
 }
 </style>
 {% endblock %}

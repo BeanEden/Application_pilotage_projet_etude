@@ -8,7 +8,10 @@
         <h1>Coûts Satellites</h1>
         <p class="subtitle">Analyse et gestion des frais hors ressources humaines.</p>
     </div>
-    <button class="btn btn-primary" onclick="openCostModal()"><i class="ph ph-plus"></i> Nouveau Coût</button>
+    <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary" onclick="exportToPDF()"><i class="ph ph-file-pdf"></i> Exporter en PDF</button>
+        <button class="btn btn-primary" onclick="openCostModal()"><i class="ph ph-plus"></i> Nouveau Coût</button>
+    </div>
 </div>
 
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
@@ -66,41 +69,196 @@
 
 <!-- Modal -->
 <div id="costModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 500px;">
         <h2 id="costModalTitle">Nouveau Coût Satellite</h2>
         <input type="hidden" id="edit-cost-id">
-        <div class="form-group"><label>Désignation</label><input type="text" id="form-cost-desc" class="form-control" placeholder="ex: Instance AWS EC2"></div>
-        <div class="grid-cols-2">
-            <div class="form-group"><label>Catégorie</label><select id="form-cost-cat" class="form-control">{% for cat in categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}</select></div>
-            <div class="form-group"><label>Montant (€)</label><input type="number" id="form-cost-amount" class="form-control" placeholder="0.00" step="0.01"></div>
+        
+        <div class="form-group">
+            <label>Désignation</label>
+            <input type="text" id="form-cost-desc" class="form-control" placeholder="ex: Microsoft Copilot / Laptop">
         </div>
-        <div class="grid-cols-2">
-            <div class="form-group"><label>Type d'Attribution</label><select id="form-attr-type" class="form-control" onchange="updateAttrValues()"><option value="Global">Global Projet</option><option value="Sprint">Sprint</option><option value="Bucket">Bucket</option><option value="Collaborator">Collaborateur</option></select></div>
-            <div class="form-group"><label>Valeur</label><select id="form-attr-val" class="form-control"><option value="Projet">Projet Complet</option></select></div>
+        
+        <div class="form-group">
+            <label>Catégorie</label>
+            <select id="form-cost-cat" class="form-control" onchange="toggleSpecialFields()">
+                {% for cat in categories %}
+                <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;"><button class="btn btn-secondary" onclick="closeCostModal()">Annuler</button><button class="btn btn-primary" onclick="saveCost()">Enregistrer</button></div>
+
+        <!-- Hardware Specific -->
+        <div id="hardware-section" style="display: none; background: var(--bg-body); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+            <div class="form-group">
+                <label>Mode de prise en charge</label>
+                <select id="form-charge-type" class="form-control" onchange="toggleSpecialFields()">
+                    <option value="direct">Charge Directe (Plein pot)</option>
+                    <option value="amortized">Amortissement (Prorata)</option>
+                </select>
+            </div>
+            <div id="amortized-fields" style="display: none;">
+                <div class="grid-cols-2">
+                    <div class="form-group">
+                        <label>Prix d'Achat (€)</label>
+                        <input type="number" id="form-purchase-price" class="form-control" placeholder="0.00" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Durée d'Amort. (ans)</label>
+                        <input type="number" id="form-amort-years" class="form-control" value="3" step="1">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recurring Specific -->
+        <div id="recurring-section" style="display: none; background: var(--bg-body); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Type de Facturation</label>
+                    <select id="form-recurrence" class="form-control">
+                        <option value="flat">Forfaitaire</option>
+                        <option value="monthly">Mensuel</option>
+                        <option value="annual">Annuel</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Montant Base (€)</label>
+                    <input type="number" id="form-base-amount" class="form-control" placeholder="0.00" step="0.01">
+                </div>
+            </div>
+        </div>
+
+        <div id="standard-amount-section">
+            <div class="form-group">
+                <label>Montant (€)</label>
+                <input type="number" id="form-cost-amount" class="form-control" placeholder="0.00" step="0.01">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Type d'Attribution</label>
+            <select id="form-attr-type" class="form-control" onchange="updateAttrValues()">
+                <option value="Global">Global Projet</option>
+                <option value="Sprint">Sprint</option>
+                <option value="Bucket">Bucket</option>
+                <option value="Collaborator">Collaborateur</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="attr-val-single-container">
+            <label>Valeur</label>
+            <select id="form-attr-val" class="form-control">
+                <option value="Projet">Projet Complet</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="attr-val-multi-container" style="display: none;">
+            <label style="display: flex; justify-content: space-between;">
+                Sélection des collaborateurs
+                <a href="javascript:void(0)" onclick="selectAllCollabs()" style="font-size: 0.7rem; color: var(--accent);">Tout sélectionner</a>
+            </label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: 120px; overflow-y: auto; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: white;">
+                {% for name in collaborators %}
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer;">
+                    <input type="checkbox" name="multi-collab" value="{{ name }}"> {{ name }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+            <label>Refacturation Client</label>
+            <div class="grid-cols-2">
+                <select id="form-rebill-type" class="form-control" onchange="toggleRebillFields()">
+                    <option value="none">Aucune (Coût interne sec)</option>
+                    <option value="margin">Taux de marge (%)</option>
+                    <option value="flat">Montant forfaitaire (€)</option>
+                </select>
+                <input type="number" id="form-rebill-value" class="form-control" placeholder="0" step="0.01" style="display: none;">
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+            <button class="btn btn-secondary" onclick="closeCostModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="saveCost()">Enregistrer</button>
+        </div>
     </div>
 </div>
 
 <script>
 let allCosts = [
     {% for cost in costs %}
-    { id: "{{ cost.id }}", desc: "{{ cost.desc }}", cat: "{{ cost.cat }}", amount: {{ cost.amount }}, attr_type: "{{ cost.attr_type }}", attr_val: "{{ cost.attr_val }}" },
+    { 
+        id: "{{ cost.id }}", desc: "{{ cost.desc }}", cat: "{{ cost.cat }}", 
+        amount: Number({{ cost.amount }}), 
+        attr_type: "{{ cost.attr_type }}", 
+        attr_val: "{{ cost.attr_val }}",
+        charge_type: "{{ cost.charge_type|default('direct') }}",
+        purchase_price: Number({{ cost.purchase_price|default(cost.amount) }}),
+        amort_years: Number({{ cost.amort_years|default(3) }}),
+        soft_recurrence: "{{ cost.soft_recurrence|default('flat') }}",
+        soft_collabs: {{ (cost.soft_collabs|default([]))|tojson }},
+        rebill_type: "{{ cost.rebill_type|default('none') }}",
+        rebill_value: Number({{ cost.rebill_value|default(0) }}),
+        rebill_amount: Number({{ cost.rebill_amount|default(cost.amount) }})
+    },
     {% endfor %}
 ];
 const buckets = {{ buckets|tojson }};
 const collaborators = {{ collaborators|tojson }};
+const PROJECT_DURATION_DAYS = 70; 
 let myPieChart = null;
+
+function toggleSpecialFields() {
+    const cat = document.getElementById('form-cost-cat').value;
+    const chargeType = document.getElementById('form-charge-type').value;
+    const isRecurring = (cat === 'Logiciel' || cat === 'Infrastructure');
+    
+    document.getElementById('hardware-section').style.display = cat === 'Matériel' ? 'block' : 'none';
+    document.getElementById('recurring-section').style.display = isRecurring ? 'block' : 'none';
+    document.getElementById('standard-amount-section').style.display = (!isRecurring && (cat !== 'Matériel' || chargeType === 'direct')) ? 'block' : 'none';
+    document.getElementById('amortized-fields').style.display = (cat === 'Matériel' && chargeType === 'amortized') ? 'block' : 'none';
+}
+
+function toggleRebillFields() {
+    const type = document.getElementById('form-rebill-type').value;
+    const input = document.getElementById('form-rebill-value');
+    if (type === 'none') {
+        input.style.display = 'none';
+    } else {
+        input.style.display = 'block';
+        input.placeholder = type === 'margin' ? "Marge (ex: 20%)" : "Montant refacturé (€)";
+    }
+}
+
+function selectAllCollabs() {
+    document.querySelectorAll('input[name="multi-collab"]').forEach(i => i.checked = true);
+}
 
 function updateAttrValues(savedVal=null) {
     const type = document.getElementById('form-attr-type').value;
+    const singleContainer = document.getElementById('attr-val-single-container');
+    const multiContainer = document.getElementById('attr-val-multi-container');
     const sel = document.getElementById('form-attr-val');
-    sel.innerHTML = '';
-    if(type==='Global') sel.innerHTML='<option value="Projet">Projet Complet</option>';
-    else if(type==='Sprint') for(let i=1;i<=4;i++) sel.innerHTML+=`<option value="Sprint ${i}">Sprint ${i}</option>`;
-    else if(type==='Bucket') buckets.forEach(b => sel.innerHTML+=`<option value="${b}">${b}</option>`);
-    else if(type==='Collaborator') collaborators.forEach(c => sel.innerHTML+=`<option value="${c}">${c}</option>`);
-    if(savedVal) sel.value=savedVal;
+    
+    if (type === 'Collaborator') {
+        singleContainer.style.display = 'none';
+        multiContainer.style.display = 'block';
+        if (savedVal) {
+            const vals = savedVal.split(',').map(v => v.trim());
+            document.querySelectorAll('input[name="multi-collab"]').forEach(i => {
+                i.checked = vals.includes(i.value);
+            });
+        }
+    } else {
+        singleContainer.style.display = 'block';
+        multiContainer.style.display = 'none';
+        sel.innerHTML = '';
+        if(type==='Global') sel.innerHTML='<option value="Projet">Projet Complet</option>';
+        else if(type==='Sprint') for(let i=1;i<=4;i++) sel.innerHTML+=`<option value="Sprint ${i}">Sprint ${i}</option>`;
+        else if(type==='Bucket') buckets.forEach(b => sel.innerHTML+=`<option value="${b}">${b}</option>`);
+        if(savedVal) sel.value=savedVal;
+    }
 }
 
 function renderSummary() {
@@ -108,34 +266,29 @@ function renderSummary() {
     summaryTbody.innerHTML = '';
     const catTotals = {};
     let grandTotal = 0;
-
     allCosts.forEach(c => {
-        catTotals[c.cat] = (catTotals[c.cat] || 0) + c.amount;
-        grandTotal += c.amount;
+        catTotals[c.cat] = (catTotals[c.cat] || 0) + Number(c.amount);
+        grandTotal += Number(c.amount);
     });
-
     Object.keys(catTotals).sort().forEach(cat => {
         const amount = catTotals[cat];
         const percent = grandTotal > 0 ? (amount / grandTotal * 100).toFixed(1) : 0;
         const row = document.createElement('tr');
         row.innerHTML = `
             <td style="font-weight: 600;">${cat}</td>
-            <td style="text-align: right; font-weight: 700;">${amount.toLocaleString('fr-FR', {minimumFractionDigits:2})} €</td>
+            <td style="text-align: right; font-weight: 700;">${amount.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €</td>
             <td style="text-align: right; color: var(--text-secondary); font-size: 0.8rem;">${percent}%</td>
         `;
         summaryTbody.appendChild(row);
     });
-
-    document.getElementById('summary-total').innerText = grandTotal.toLocaleString('fr-FR', {minimumFractionDigits:2}) + ' €';
+    document.getElementById('summary-total').innerText = grandTotal.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
     renderPieChart(catTotals);
 }
 
 function renderPieChart(data) {
     const ctx = document.getElementById('cost-pie-chart').getContext('2d');
     if (myPieChart) myPieChart.destroy();
-
     const colors = ['#2d2d6e', '#4a4aad', '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'];
-
     myPieChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -143,18 +296,10 @@ function renderPieChart(data) {
             datasets: [{
                 data: Object.values(data),
                 backgroundColor: colors.slice(0, Object.keys(data).length),
-                borderWidth: 0,
-                hoverOffset: 10
+                borderWidth: 0, hoverOffset: 10
             }]
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11, family: 'Inter' }, color: '#6e6e73' } }
-            }
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11, family: 'Inter' }, color: '#6e6e73' } } } }
     });
 }
 
@@ -162,10 +307,8 @@ function renderDetailedList() {
     const container = document.getElementById('detailed-list-container');
     const groupKey = document.getElementById('group-detail').value;
     container.innerHTML = '';
-
     if (groupKey === 'none') {
-        const table = createTable(allCosts);
-        container.appendChild(table);
+        container.appendChild(createTable(allCosts));
     } else {
         const groups = {};
         allCosts.forEach(c => {
@@ -173,7 +316,6 @@ function renderDetailedList() {
             if (!groups[key]) groups[key] = [];
             groups[key].push(c);
         });
-
         Object.keys(groups).sort().forEach(key => {
             const header = document.createElement('div');
             header.style.cssText = 'padding: 0.75rem 1.25rem; background: var(--bg-body); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border-light);';
@@ -188,17 +330,28 @@ function createTable(data) {
     const table = document.createElement('table');
     table.style.margin = '0';
     table.innerHTML = `
-        <thead><tr><th>Désignation</th><th>Catégorie</th><th>Attribution</th><th style="text-align: right;">Montant</th><th style="text-align: center;">Actions</th></tr></thead>
+        <thead><tr><th>Désignation</th><th>Catégorie</th><th>Attribution</th><th style="text-align: right;">Coût Interne</th><th style="text-align: right;">Prix Refacturé</th><th style="text-align: center;">Actions</th></tr></thead>
         <tbody></tbody>
     `;
     const tbody = table.querySelector('tbody');
     data.forEach(c => {
         const row = document.createElement('tr');
+        let detailHtml = '';
+        if(c.cat === 'Matériel' && c.charge_type === 'amortized') detailHtml = `<div style="font-size: 0.65rem; color: var(--text-secondary);">Amort. ${c.amort_years} ans (${Math.round(c.purchase_price).toLocaleString()} €)</div>`;
+        if(c.cat === 'Logiciel' || c.cat === 'Infrastructure') {
+            detailHtml = `<div style="font-size: 0.65rem; color: var(--text-secondary);">Recurrence: ${c.soft_recurrence}</div>`;
+        }
+
+        let rebillHtml = '';
+        if (c.rebill_type === 'margin') rebillHtml = `<div style="font-size: 0.65rem; color: var(--accent);">+${c.rebill_value}% marge</div>`;
+        else if (c.rebill_type === 'flat') rebillHtml = `<div style="font-size: 0.65rem; color: var(--accent);">Forfait</div>`;
+
         row.innerHTML = `
-            <td style="font-weight: 600;">${c.desc}</td>
+            <td style="font-weight: 600;">${c.desc}${detailHtml}</td>
             <td><span class="badge">${c.cat}</span></td>
             <td><span style="font-size: 0.75rem; color: var(--text-secondary); display: block;">${c.attr_type}</span><span style="color: var(--accent); font-weight: 600; font-size: 0.85rem;">${c.attr_val}</span></td>
-            <td style="text-align: right; font-weight: 700;">${c.amount.toLocaleString('fr-FR', {minimumFractionDigits:2})} €</td>
+            <td style="text-align: right; font-weight: 700;">${Number(c.amount).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €</td>
+            <td style="text-align: right; font-weight: 700; color: var(--accent-vivid);">${Number(c.rebill_amount || c.amount).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €${rebillHtml}</td>
             <td style="text-align: center;"><div style="display: flex; gap: 0.75rem; justify-content: center;"><i class="ph ph-pencil-simple edit-btn" onclick="editCost('${c.id}')"></i><i class="ph ph-trash remove-btn" onclick="removeCost('${c.id}')"></i></div></td>
         `;
         tbody.appendChild(row);
@@ -213,8 +366,16 @@ function openCostModal(isEdit=false) {
         document.getElementById('edit-cost-id').value=""; 
         document.getElementById('form-cost-desc').value=""; 
         document.getElementById('form-cost-amount').value=""; 
-        document.getElementById('form-attr-type').value="Global"; 
+        document.getElementById('form-base-amount').value="";
+        document.getElementById('form-purchase-price').value="";
+        document.getElementById('form-charge-type').value="direct";
+        document.getElementById('form-cost-cat').value="Infrastructure";
+        document.getElementById('form-rebill-type').value="none";
+        document.getElementById('form-rebill-value').value="";
+        document.querySelectorAll('input[name="multi-collab"]').forEach(i => i.checked = false);
         updateAttrValues(); 
+        toggleSpecialFields();
+        toggleRebillFields();
     } 
 }
 function closeCostModal() { document.getElementById('costModal').classList.remove('active'); }
@@ -225,42 +386,89 @@ function editCost(id) {
     document.getElementById('edit-cost-id').value = cost.id;
     document.getElementById('form-cost-desc').value = cost.desc;
     document.getElementById('form-cost-cat').value = cost.cat;
+    document.getElementById('form-charge-type').value = cost.charge_type || 'direct';
     document.getElementById('form-cost-amount').value = cost.amount;
+    document.getElementById('form-base-amount').value = (cost.cat === 'Logiciel' || cost.cat === 'Infrastructure') ? cost.purchase_price : '';
+    document.getElementById('form-recurrence').value = cost.soft_recurrence || 'flat';
+    document.getElementById('form-purchase-price').value = cost.purchase_price || cost.amount;
+    document.getElementById('form-amort-years').value = cost.amort_years || 3;
     document.getElementById('form-attr-type').value = cost.attr_type;
+    document.getElementById('form-rebill-type').value = cost.rebill_type || 'none';
+    document.getElementById('form-rebill-value').value = cost.rebill_value || '';
+    
     updateAttrValues(cost.attr_val);
+    toggleSpecialFields();
+    toggleRebillFields();
     openCostModal(true);
+}
+
+function persistData() {
+    fetch('/api/save-costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(allCosts) });
 }
 
 function saveCost() {
     const id = document.getElementById('edit-cost-id').value;
     const desc = document.getElementById('form-cost-desc').value;
     const cat = document.getElementById('form-cost-cat').value;
-    const amount = parseFloat(document.getElementById('form-cost-amount').value);
+    const chargeType = document.getElementById('form-charge-type').value;
     const attrType = document.getElementById('form-attr-type').value;
-    const attrVal = document.getElementById('form-attr-val').value;
-    if(!desc || isNaN(amount)) return;
     
-    if(id) {
-        const i = allCosts.findIndex(c => c.id === id);
-        allCosts[i] = {id, desc, cat, amount, attr_type: attrType, attr_val: attrVal};
+    let amount = 0;
+    let purchasePrice = 0;
+    let amortYears = 3;
+    let softRecurrence = 'flat';
+    let attrVal = '';
+
+    if (attrType === 'Collaborator') {
+        const selected = [];
+        document.querySelectorAll('input[name="multi-collab"]:checked').forEach(i => selected.push(i.value));
+        attrVal = selected.join(', ');
     } else {
-        allCosts.push({id: Date.now().toString(), desc, cat, amount, attr_type: attrType, attr_val: attrVal});
+        attrVal = document.getElementById('form-attr-val').value;
     }
+
+    if (cat === 'Matériel') {
+        if (chargeType === 'amortized') {
+            purchasePrice = parseFloat(document.getElementById('form-purchase-price').value || 0);
+            amortYears = parseInt(document.getElementById('form-amort-years').value || 1);
+            amount = (purchasePrice / (amortYears * 365)) * PROJECT_DURATION_DAYS;
+        } else {
+            amount = parseFloat(document.getElementById('form-cost-amount').value || 0);
+            purchasePrice = amount;
+        }
+    } else if (cat === 'Logiciel' || cat === 'Infrastructure') {
+        purchasePrice = parseFloat(document.getElementById('form-base-amount').value || 0); 
+        softRecurrence = document.getElementById('form-recurrence').value;
+        let projectFactor = 1;
+        if(softRecurrence === 'monthly') projectFactor = PROJECT_DURATION_DAYS / 30.44;
+        else if(softRecurrence === 'annual') projectFactor = PROJECT_DURATION_DAYS / 365;
+        amount = purchasePrice * projectFactor;
+    } else {
+        amount = parseFloat(document.getElementById('form-cost-amount').value || 0);
+        purchasePrice = amount;
+    }
+
+    const rebillType = document.getElementById('form-rebill-type').value;
+    let rebillValue = 0;
+    let rebilledAmount = amount;
+    if (rebillType !== 'none') {
+        rebillValue = parseFloat(document.getElementById('form-rebill-value').value || 0);
+        if (rebillType === 'margin') rebilledAmount = amount * (1 + (rebillValue / 100));
+        else if (rebillType === 'flat') rebilledAmount = rebillValue;
+    }
+
+    if(!desc) return;
+    const costData = {id: id || Date.now().toString(), desc, cat, amount: Number(amount), attr_type: attrType, attr_val: attrVal, charge_type: chargeType, purchase_price: Number(purchasePrice), amort_years: Number(amortYears), soft_recurrence: softRecurrence, soft_collabs: [], rebill_type: rebillType, rebill_value: Number(rebillValue), rebill_amount: Number(rebilledAmount)};
     
-    renderSummary();
-    renderDetailedList();
-    closeCostModal();
+    if(id) { const i = allCosts.findIndex(c => c.id === id); allCosts[i] = costData; }
+    else { allCosts.push(costData); }
+    
+    renderSummary(); renderDetailedList(); persistData(); closeCostModal();
 }
 
 function removeCost(id) {
-    if(confirm("Supprimer ce coût ?")) {
-        allCosts = allCosts.filter(c => c.id !== id);
-        renderSummary();
-        renderDetailedList();
-    }
+    if(confirm("Supprimer ce coût ?")) { allCosts = allCosts.filter(c => c.id !== id); renderSummary(); renderDetailedList(); persistData(); }
 }
-
-renderSummary();
-renderDetailedList();
+renderSummary(); renderDetailedList();
 </script>
 {% endblock %}

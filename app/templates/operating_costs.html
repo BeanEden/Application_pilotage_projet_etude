@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="page-header">
+    <div>
+        <h1>Coûts d'Exploitation (RUN)</h1>
+        <p class="subtitle">Analyse temporelle et catégorielle des frais récurrents post-déploiement.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary" onclick="exportToPDF()"><i class="ph ph-file-pdf"></i> Exporter en PDF</button>
+        <button class="btn btn-secondary" onclick="toggleView()">
+            <i class="ph ph-presentation-chart"></i> <span id="toggle-text">Vue Temporelle</span>
+        </button>
+        <button class="btn btn-primary" onclick="openModal('costModal')">
+            <i class="ph ph-plus"></i> Nouveau Poste
+        </button>
+    </div>
+</div>
+
+<!-- TOP SECTION: SUMMARY & PIE -->
+<div id="summary-section" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+            <h3 style="margin: 0; font-size: 1rem;">Récapitulatif Annuel</h3>
+        </div>
+        <div style="padding: 1.5rem; text-align: center;">
+            <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">Burn Rate Annuel (Vitesse de croisière)</div>
+            <div id="total-annual" style="font-size: 2.2rem; font-weight: 800; color: var(--accent);">0 €</div>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light); display: flex; justify-content: space-around;">
+                <div>
+                    <div style="font-size: 0.65rem; color: var(--text-secondary);">Burn Rate Mensuel</div>
+                    <div id="total-monthly" style="font-weight: 700; color: var(--text-primary);">0 €</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <h3 style="margin-bottom: 1rem; align-self: flex-start; font-size: 1rem;">Répartition par Catégorie</h3>
+        <div style="width: 100%; height: 200px; display: flex; justify-content: center;">
+            <canvas id="op-cost-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- EVOLUTION SECTION (Hidden by default or toggled) -->
+<div id="evolution-section" class="card" style="display: none; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h3 style="margin: 0; font-size: 1rem;">Évolution de la charge mensuelle (12 mois)</h3>
+        <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary btn-sm" onclick="setEvolutionType('total')" id="btn-ev-total" style="font-size: 0.7rem; padding: 4px 8px;">Total</button>
+            <button class="btn btn-secondary btn-sm" onclick="setEvolutionType('category')" id="btn-ev-cat" style="font-size: 0.7rem; padding: 4px 8px;">Par Catégorie</button>
+        </div>
+    </div>
+    <div style="width: 100%; height: 300px;">
+        <canvas id="evolution-chart"></canvas>
+    </div>
+</div>
+
+<!-- LIST SECTION -->
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 1rem;">Détail des postes</h3>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Grouper par :</span>
+            <select id="groupBy" class="form-control" style="width: auto; padding: 4px 8px; height: 32px;" onchange="renderAll()">
+                <option value="none">Aucun</option>
+                <option value="cat">Catégorie</option>
+            </select>
+        </div>
+    </div>
+    <div id="table-container">
+        <!-- Tables injected by JS -->
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="costModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 id="modalTitle">Nouveau Poste d'Exploitation</h2>
+            <i class="ph ph-x" style="cursor: pointer; font-size: 1.2rem;" onclick="closeModal('costModal')"></i>
+        </div>
+        
+        <form id="costForm">
+            <input type="hidden" id="costId">
+            <div class="form-group">
+                <label>Désignation</label>
+                <input type="text" id="costDesc" class="form-control" placeholder="ex: Azure SQL Database" required>
+            </div>
+            
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Catégorie</label>
+                    <select id="costCat" class="form-control" required>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Début de facturation</label>
+                    <input type="month" id="costStartDate" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Coût Mensuel (€)</label>
+                    <input type="number" id="costMonthly" class="form-control" value="0" step="0.01" oninput="updateAnnualFromMonthly()">
+                </div>
+                <div class="form-group">
+                    <label>Coût Annuel (€)</label>
+                    <input type="number" id="costAnnual" class="form-control" value="0" step="0.01" oninput="updateMonthlyFromAnnual()">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Enregistrer</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('costModal')">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let costs = {{ costs|tojson }};
+    const categories = {{ categories|tojson }};
+    let myPieChart = null;
+    let myEvChart = null;
+    let evolutionType = 'total';
+    let isEvolutionVisible = false;
+
+    function toggleView() {
+        isEvolutionVisible = !isEvolutionVisible;
+        document.getElementById('evolution-section').style.display = isEvolutionVisible ? 'block' : 'none';
+        document.getElementById('toggle-text').innerText = isEvolutionVisible ? 'Masquer Vue Temporelle' : 'Vue Temporelle';
+        if (isEvolutionVisible) renderEvolutionChart();
+    }
+
+    function setEvolutionType(type) {
+        evolutionType = type;
+        document.getElementById('btn-ev-total').classList.toggle('btn-primary', type === 'total');
+        document.getElementById('btn-ev-total').classList.toggle('btn-secondary', type !== 'total');
+        document.getElementById('btn-ev-cat').classList.toggle('btn-primary', type === 'category');
+        document.getElementById('btn-ev-cat').classList.toggle('btn-secondary', type !== 'category');
+        renderEvolutionChart();
+    }
+
+    function updateAnnualFromMonthly() {
+        const m = parseFloat(document.getElementById('costMonthly').value) || 0;
+        document.getElementById('costAnnual').value = (m * 12).toFixed(2);
+    }
+
+    function updateMonthlyFromAnnual() {
+        const a = parseFloat(document.getElementById('costAnnual').value) || 0;
+        document.getElementById('costMonthly').value = (a / 12).toFixed(2);
+    }
+
+    function openModal(id, editId = null) {
+        document.getElementById(id).classList.add('active');
+        if (editId) {
+            const cost = costs.find(c => c.id == editId);
+            document.getElementById('modalTitle').innerText = "Modifier le poste";
+            document.getElementById('costId').value = cost.id;
+            document.getElementById('costDesc').value = cost.desc;
+            document.getElementById('costCat').value = cost.cat;
+            document.getElementById('costMonthly').value = cost.monthly;
+            document.getElementById('costAnnual').value = cost.annual;
+            document.getElementById('costStartDate').value = cost.startDate || '2026-05';
+        } else {
+            document.getElementById('modalTitle').innerText = "Nouveau Poste d'Exploitation";
+            document.getElementById('costForm').reset();
+            document.getElementById('costId').value = "";
+            document.getElementById('costStartDate').value = new Date().toISOString().slice(0, 7);
+        }
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    document.getElementById('costForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('costId').value;
+        const newCost = {
+            id: id || Date.now().toString(),
+            desc: document.getElementById('costDesc').value,
+            cat: document.getElementById('costCat').value,
+            monthly: parseFloat(document.getElementById('costMonthly').value) || 0,
+            annual: parseFloat(document.getElementById('costAnnual').value) || 0,
+            startDate: document.getElementById('costStartDate').value
+        };
+
+        if (id) {
+            const index = costs.findIndex(c => c.id == id);
+            costs[index] = newCost;
+        } else {
+            costs.push(newCost);
+        }
+
+        saveCosts();
+    });
+
+    function deleteCost(id) {
+        if (confirm('Supprimer ce poste de dépense ?')) {
+            costs = costs.filter(c => c.id != id);
+            saveCosts();
+        }
+    }
+
+    function saveCosts() {
+        fetch('/api/save-operating-costs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(costs)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                closeModal('costModal');
+                renderAll();
+            }
+        });
+    }
+
+    function renderAll() {
+        const container = document.getElementById('table-container');
+        const groupBy = document.getElementById('groupBy').value;
+        container.innerHTML = '';
+        
+        let totalM = 0;
+        let totalA = 0;
+        const catTotals = {};
+
+        costs.forEach(c => {
+            totalM += c.monthly;
+            totalA += c.annual;
+            catTotals[c.cat] = (catTotals[c.cat] || 0) + c.annual;
+        });
+
+        if (groupBy === 'none') {
+            container.appendChild(createTable(costs));
+        } else {
+            const groups = {};
+            costs.forEach(c => {
+                if (!groups[c.cat]) groups[c.cat] = [];
+                groups[c.cat].push(c);
+            });
+            Object.keys(groups).sort().forEach(cat => {
+                const header = document.createElement('div');
+                header.style.cssText = 'padding: 0.75rem 1.25rem; background: var(--bg-body); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--border);';
+                header.innerText = cat;
+                container.appendChild(header);
+                container.appendChild(createTable(groups[cat]));
+            });
+        }
+
+        document.getElementById('total-annual').innerText = totalA.toLocaleString('fr-FR') + ' €';
+        document.getElementById('total-monthly').innerText = totalM.toLocaleString('fr-FR', {minimumFractionDigits:2}) + ' €';
+
+        renderPieChart(catTotals);
+        if (isEvolutionVisible) renderEvolutionChart();
+    }
+
+    function createTable(data) {
+        const table = document.createElement('table');
+        table.style.margin = '0';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Désignation</th>
+                    <th>Début</th>
+                    <th style="text-align: right;">Mensuel (€)</th>
+                    <th style="text-align: right;">Annuel (€)</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+        const tbody = table.querySelector('tbody');
+        data.forEach(c => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="font-weight: 600;">${c.desc}</td>
+                <td class="mono" style="font-size: 0.8rem;">${c.startDate || '-'}</td>
+                <td style="text-align: right;">${c.monthly.toLocaleString('fr-FR')} €</td>
+                <td style="text-align: right; font-weight: 700;">${c.annual.toLocaleString('fr-FR')} €</td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <i class="ph ph-pencil-simple edit-btn" onclick="openModal('costModal', '${c.id}')"></i>
+                        <i class="ph ph-trash remove-btn" onclick="deleteCost('${c.id}')"></i>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        return table;
+    }
+
+    function renderPieChart(data) {
+        const ctx = document.getElementById('op-cost-chart').getContext('2d');
+        if (myPieChart) myPieChart.destroy();
+        const colors = ['#2d2d6e', '#6366f1', '#30d158', '#ff9f0a', '#ff3b30', '#5ac8fa'];
+        myPieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: colors.slice(0, Object.keys(data).length),
+                    borderWidth: 0, cutout: '70%'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } } }
+        });
+    }
+
+    function renderEvolutionChart() {
+        const ctx = document.getElementById('evolution-chart').getContext('2d');
+        if (myEvChart) myEvChart.destroy();
+
+        // Generate 12 months from now
+        const months = [];
+        let curr = new Date(2026, 4, 1); // Starting May 2026 for the demo
+        for (let i = 0; i < 12; i++) {
+            months.push(new Date(curr.getFullYear(), curr.getMonth() + i, 1));
+        }
+
+        const labels = months.map(m => m.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }));
+        const monthStrings = months.map(m => m.toISOString().slice(0, 7));
+
+        const datasets = [];
+        const colors = ['#2d2d6e', '#6366f1', '#30d158', '#ff9f0a', '#ff3b30', '#5ac8fa'];
+
+        if (evolutionType === 'total') {
+            const data = monthStrings.map(ms => {
+                return costs.filter(c => !c.startDate || c.startDate <= ms)
+                            .reduce((sum, c) => sum + c.monthly, 0);
+            });
+            datasets.push({
+                label: 'Charge Mensuelle Totale',
+                data: data,
+                borderColor: '#2d2d6e',
+                backgroundColor: 'rgba(45, 45, 110, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 3,
+                pointRadius: 4
+            });
+        } else {
+            categories.forEach((cat, idx) => {
+                const data = monthStrings.map(ms => {
+                    return costs.filter(c => c.cat === cat && (!c.startDate || c.startDate <= ms))
+                                .reduce((sum, c) => sum + c.monthly, 0);
+                });
+                if (data.some(v => v > 0)) {
+                    datasets.push({
+                        label: cat,
+                        data: data,
+                        borderColor: colors[idx % colors.length],
+                        tension: 0.3,
+                        pointRadius: 0
+                    });
+                }
+            });
+        }
+
+        myEvChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: v => v + ' €' } },
+                    x: { grid: { display: false } }
+                },
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
+            }
+        });
+    }
+
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.remove('active');
+        }
+    }
+
+    renderAll();
+    setEvolutionType('total');
+</script>
+{% endblock %}

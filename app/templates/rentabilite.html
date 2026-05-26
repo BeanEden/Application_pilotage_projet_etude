@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+
+<div class="page-header">
+    <div>
+        <h1>Rentabilité du Projet</h1>
+        <p class="subtitle">Analyse comparative entre le budget interne réel et la refacturation client (Marge).</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.5rem;">
+    <div class="stat-card"><div class="stat-label">Coût Interne (Réel)</div><div id="stat-reel" class="stat-value" style="color: var(--text-primary);">0 €</div></div>
+    <div class="stat-card"><div class="stat-label">Montant Facturé (Client)</div><div id="stat-client" class="stat-value" style="color: var(--accent-vivid);">0 €</div></div>
+    <div class="stat-card"><div class="stat-label">Marge Brute</div><div id="stat-marge" class="stat-value" style="color: #16a34a;">0 €</div></div>
+    <div class="stat-card"><div class="stat-label">Taux de Rentabilité</div><div id="stat-taux" class="stat-value" style="color: #16a34a;">0%</div></div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    <div class="card">
+        <h3>Comparatif Réel vs Client (Par Nature)</h3>
+        <div style="height: 280px;"><canvas id="chart-nature-compare"></canvas></div>
+    </div>
+    <div class="card">
+        <h3>Évolution de la Marge Cumulée (€)</h3>
+        <div style="height: 280px;"><canvas id="chart-marge-evo"></canvas></div>
+    </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+        <h3 style="margin: 0;">Analyse de la Marge (Par Sprint)</h3>
+    </div>
+    <div id="rentabilite-table-container"></div>
+</div>
+
+<script>
+Chart.register(ChartDataLabels);
+const tasks = {{ tasks|tojson|safe }};
+const collaborators = {{ collaborators|tojson|safe }};
+const satelliteCosts = {{ satellite_costs|tojson|safe }};
+const weeks = ["12/05","19/05","26/05","02/06","09/06","16/06","23/06","30/06","07/07","14/07"];
+let c1, c2;
+
+function calculateRentabilite() {
+    let totalReelRH = 0, totalClientRH = 0;
+    let totalReelSat = 0, totalClientSat = 0;
+    
+    let weeklyMargin = Array(weeks.length).fill(0);
+    
+    // Grouping by sprint for table
+    let sprintData = { 1: { reel: 0, client: 0 }, 2: { reel: 0, client: 0 }, 3: { reel: 0, client: 0 }, 4: { reel: 0, client: 0 } };
+
+    // RH Costs
+    tasks.forEach(t => {
+        const dDays = t.duration ? (t.duration.includes('2 sem') ? 10 : 5) : 5;
+        const dWeeks = dDays === 10 ? 2 : 1;
+        
+        let tReel = 0;
+        let tClient = 0;
+        
+        t.assignees.forEach(n => {
+            const co = collaborators.find(c => c.name === n);
+            if (co) {
+                const reelDaily = (co.salary * (1 + co.charge_rate)) / 218;
+                const clientDaily = co.tjm_applied;
+                tReel += reelDaily * dDays;
+                tClient += clientDaily * dDays;
+            }
+        });
+        
+        totalReelRH += tReel;
+        totalClientRH += tClient;
+        
+        const sp = t.sprint || 1;
+        if (sprintData[sp]) {
+            sprintData[sp].reel += tReel;
+            sprintData[sp].client += tClient;
+        }
+        
+        // distribute margin across weeks
+        const marginPerWeek = (tClient - tReel) / dWeeks;
+        for (let i = 0; i < dWeeks; i++) {
+            const w = (t.start_week || 0) + i;
+            if (w < weeks.length) weeklyMargin[w] += marginPerWeek;
+        }
+    });
+
+    // Satellite Costs
+    satelliteCosts.forEach(c => {
+        const amtReel = Number(c.amount || 0);
+        const amtClient = Number(c.rebill_amount || c.amount || 0);
+        
+        totalReelSat += amtReel;
+        totalClientSat += amtClient;
+        
+        let sprint = 1;
+        if (c.attr_type === 'Sprint') {
+            sprint = parseInt(c.attr_val.split(' ')[1]) || 1;
+        }
+        if (sprintData[sprint]) {
+            sprintData[sprint].reel += amtReel;
+            sprintData[sprint].client += amtClient;
+        }
+        
+        // Spread margin on first week of sprint
+        const w = (sprint - 1) * 2;
+        if (w >= 0 && w < weeks.length) weeklyMargin[w] += (amtClient - amtReel);
+    });
+
+    const totalReel = totalReelRH + totalReelSat;
+    const totalClient = totalClientRH + totalClientSat;
+    const margeBrute = totalClient - totalReel;
+    const tauxMarge = totalClient > 0 ? (margeBrute / totalClient) * 100 : 0;
+
+    // Update stats
+    document.getElementById('stat-reel').innerText = Math.round(totalReel).toLocaleString() + ' €';
+    document.getElementById('stat-client').innerText = Math.round(totalClient).toLocaleString() + ' €';
+    document.getElementById('stat-marge').innerText = Math.round(margeBrute).toLocaleString() + ' €';
+    document.getElementById('stat-taux').innerText = tauxMarge.toFixed(1) + ' %';
+    
+    // Cumulative margin
+    let cum = 0;
+    const cumMargin = weeklyMargin.map(m => { cum += m; return cum; });
+
+    // Render Charts
+    if(c1) c1.destroy();
+    c1 = new Chart(document.getElementById('chart-nature-compare'), {
+        type: 'bar',
+        data: {
+            labels: ['Coûts RH', 'Coûts Satellites'],
+            datasets: [
+                { label: 'Réel (Interne)', data: [totalReelRH, totalReelSat], backgroundColor: '#64748b' },
+                { label: 'Facturé (Client)', data: [totalClientRH, totalClientSat], backgroundColor: '#2563eb' }
+            ]
+        },
+        options: {
+            plugins: {
+                datalabels: {
+                    anchor: 'end', align: 'top', color: '#6e6e73', font: {size: 10, weight: 'bold'},
+                    formatter: v => Math.round(v).toLocaleString() + ' €'
+                }
+            },
+            scales: { y: { beginAtZero: true, grid: { color: '#f2f2f7' } }, x: { grid: { display: false } } }
+        }
+    });
+
+    if(c2) c2.destroy();
+    c2 = new Chart(document.getElementById('chart-marge-evo'), {
+        type: 'line',
+        data: {
+            labels: weeks,
+            datasets: [{
+                label: 'Marge Cumulée',
+                data: cumMargin,
+                borderColor: '#16a34a',
+                backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            plugins: {
+                datalabels: { display: false }
+            },
+            scales: { y: { grid: { color: '#f2f2f7' } }, x: { grid: { display: false } } }
+        }
+    });
+
+    // Render Table
+    const tContainer = document.getElementById('rentabilite-table-container');
+    let html = `<table style="margin: 0;"><thead><tr><th>Sprint</th><th style="text-align:right;">Coût Interne</th><th style="text-align:right;">Montant Facturé</th><th style="text-align:right;">Marge (€)</th><th style="text-align:right;">Marge (%)</th></tr></thead><tbody>`;
+    Object.keys(sprintData).sort().forEach(s => {
+        const r = sprintData[s].reel;
+        const c = sprintData[s].client;
+        const m = c - r;
+        const p = c > 0 ? (m / c) * 100 : 0;
+        html += `<tr>
+            <td style="font-weight: 600;">Sprint ${s}</td>
+            <td style="text-align:right;">${Math.round(r).toLocaleString()} €</td>
+            <td style="text-align:right; font-weight: 600; color: var(--accent);">${Math.round(c).toLocaleString()} €</td>
+            <td style="text-align:right; font-weight: 700; color: ${m >= 0 ? '#16a34a' : '#dc2626'};">${m >= 0 ? '+' : ''}${Math.round(m).toLocaleString()} €</td>
+            <td style="text-align:right; color: ${p >= 0 ? '#16a34a' : '#dc2626'};">${p.toFixed(1)} %</td>
+        </tr>`;
+    });
+    html += `</tbody></table>`;
+    tContainer.innerHTML = html;
+}
+
+calculateRentabilite();
+</script>
+<style>
+canvas { max-width: 100%; }
+h3 { font-size: 0.9rem; margin-bottom: 0.75rem; }
+</style>
+{% endblock %}

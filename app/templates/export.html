@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Centre d'Exportation Rapport</h1>
+        <p class="subtitle">Sélectionnez les chapitres à inclure dans votre rapport complet NovaRetail.</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem;">
+    <!-- Selection Panel -->
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3>Chapitres disponibles</h3>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary btn-sm" onclick="selectAll(true)">Tout cocher</button>
+                <button class="btn btn-secondary btn-sm" onclick="selectAll(false)">Tout décocher</button>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            {% for page in pages %}
+            <label class="list-item" style="cursor: pointer; padding: 0.75rem 1rem;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" class="page-checkbox" data-id="{{ page.id }}" data-url="{{ page.url }}" data-title="{{ page.title }}">
+                    <span style="font-size: 0.9rem; font-weight: 500;">{{ page.title }}</span>
+                </div>
+                <i class="ph ph-file-text" style="color: var(--text-secondary);"></i>
+            </label>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <input type="text" id="config-name" class="form-control" placeholder="Nom de la sélection (ex: Rapport Mensuel)" style="width: 250px;">
+                <button class="btn btn-secondary" onclick="saveConfig()"><i class="ph ph-bookmark-simple"></i> Sauvegarder</button>
+            </div>
+            <button class="btn btn-primary" style="padding: 0.75rem 1.5rem;" onclick="generateBatchPDF()">
+                <i class="ph ph-file-pdf"></i> Générer le PDF complet
+            </button>
+        </div>
+    </div>
+
+    <!-- Saved Configs -->
+    <div class="card">
+        <h3>Sélections sauvegardées</h3>
+        <p class="subtitle" style="margin-bottom: 1.5rem;">Réutilisez vos configurations d'export habituelles.</p>
+        
+        <div id="configs-list" class="mini-list">
+            {% for config in configs %}
+            <div class="mini-item">
+                <div class="mini-item-info">
+                    <div style="font-weight: 700;">{{ config.name }}</div>
+                    <div style="font-size: 0.7rem; color: var(--text-secondary);">{{ config.pages|length }} chapitres</div>
+                </div>
+                <div class="action-icons">
+                    <button class="btn btn-secondary btn-sm" onclick="loadConfig({{ loop.index0 }})" title="Charger"><i class="ph ph-upload-simple"></i></button>
+                    <button class="btn btn-secondary btn-sm" onclick="deleteConfig({{ loop.index0 }})" title="Supprimer" style="color: var(--danger);"><i class="ph ph-trash"></i></button>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not configs %}
+            <div style="text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.85rem;">
+                Aucune sélection sauvegardée.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Progress Overlay -->
+<div id="export-progress" class="modal" style="pointer-events: none;">
+    <div class="modal-content" style="text-align: center; max-width: 400px;">
+        <i class="ph ph-spinner ph-bold" style="font-size: 3rem; color: var(--accent); display: block; margin: 0 auto 1.5rem; animation: spin 1s linear infinite;"></i>
+        <h2 id="progress-title">Préparation de l'export...</h2>
+        <p id="progress-status" class="text-secondary" style="margin-top: 0.5rem;">Veuillez patienter pendant la capture des chapitres.</p>
+        <div style="margin-top: 1.5rem; height: 8px; background: var(--bg-body); border-radius: 4px; overflow: hidden;">
+            <div id="progress-bar" style="width: 0%; height: 100%; background: var(--accent-vivid); transition: width 0.3s ease;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="hidden-render-container" style="display: none; position: absolute; left: -9999px; top: 0; width: 1200px;"></div>
+
+<script>
+    let configs = {{ configs|tojson }};
+    const pages = {{ pages|tojson }};
+
+    function selectAll(check) {
+        document.querySelectorAll('.page-checkbox').forEach(cb => cb.checked = check);
+    }
+
+    function saveConfig() {
+        const name = document.getElementById('config-name').value;
+        const selectedIds = Array.from(document.querySelectorAll('.page-checkbox:checked')).map(cb => cb.dataset.id);
+        
+        if (!name || selectedIds.length === 0) {
+            alert('Veuillez donner un nom et sélectionner au moins un chapitre.');
+            return;
+        }
+
+        configs.push({ name, pages: selectedIds });
+        
+        fetch('/api/save-export-configs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(configs)
+        }).then(() => window.location.reload());
+    }
+
+    function loadConfig(idx) {
+        const config = configs[idx];
+        selectAll(false);
+        config.pages.forEach(id => {
+            const cb = document.querySelector(`.page-checkbox[data-id="${id}"]`);
+            if (cb) cb.checked = true;
+        });
+        document.getElementById('config-name').value = config.name;
+    }
+
+    function deleteConfig(idx) {
+        if (confirm('Supprimer cette configuration ?')) {
+            configs.splice(idx, 1);
+            fetch('/api/save-export-configs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(configs)
+            }).then(() => window.location.reload());
+        }
+    }
+
+    async function generateBatchPDF() {
+        const selectedCbs = Array.from(document.querySelectorAll('.page-checkbox:checked'));
+        if (selectedCbs.length === 0) {
+            alert('Sélectionnez au moins un chapitre.');
+            return;
+        }
+
+        const overlay = document.getElementById('export-progress');
+        const bar = document.getElementById('progress-bar');
+        const status = document.getElementById('progress-status');
+        const container = document.getElementById('hidden-render-container');
+        
+        overlay.classList.add('active');
+        container.innerHTML = '';
+        container.style.display = 'block';
+        container.style.background = 'white';
+        container.style.padding = '0';
+        container.style.margin = '0';
+
+        let completed = 0;
+        
+        try {
+            for (const cb of selectedCbs) {
+                const title = cb.dataset.title;
+                const url = cb.dataset.url;
+                
+                status.innerText = `Capture : ${title}...`;
+                console.log(`Fetching ${title} from ${url}`);
+                bar.style.width = `${(completed / selectedCbs.length) * 100}%`;
+
+                // Use iframe to ensure scripts (Chart.js) run
+                const iframe = document.createElement('iframe');
+                iframe.style.width = '1200px';
+                iframe.style.height = '4000px'; 
+                iframe.style.visibility = 'hidden';
+                iframe.style.position = 'fixed';
+                iframe.style.left = '-10000px';
+                document.body.appendChild(iframe);
+                iframe.src = url;
+
+                // Wait for iframe to load and render charts
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error(`Timeout de chargement pour : ${title}`)), 20000);
+                    
+                    iframe.onload = async () => {
+                        try {
+                            const win = iframe.contentWindow;
+                            const doc = iframe.contentDocument || win.document;
+                            
+                            // Poll until the main content is actually there and initialized
+                            let attempts = 0;
+                            while (attempts < 20) {
+                                const main = doc.querySelector('.main-content');
+                                // Specifically for ROI: wait for roiData or charts
+                                const isROI = url.includes('roi');
+                                const isReady = main && (!isROI || (win.roiChart && win.distChart));
+                                
+                                if (isReady) break;
+                                
+                                await new Promise(r => setTimeout(r, 500));
+                                attempts++;
+                            }
+
+                            // Force show all sections
+                            if (win.toggleView && !win.isEvolutionVisible) win.toggleView();
+                            if (win.renderAll) win.renderAll();
+                            if (win.updateUI) win.updateUI();
+                            
+                            clearTimeout(timeout);
+                            // Extra time for final rendering
+                            setTimeout(resolve, 3000);
+                        } catch(e) { 
+                            console.error("Iframe readiness check failed:", e);
+                            clearTimeout(timeout);
+                            resolve(); // Try to continue anyway
+                        }
+                    };
+                });
+
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const mainContent = iframeDoc.querySelector('.main-content');
+                
+                if (mainContent && mainContent.innerText.trim().length > 0) {
+                    console.log(`Cloning content for ${title}`);
+                    
+                    // Unhide hidden sections that might contain charts
+                    mainContent.querySelectorAll('[style*="display: none"], [style*="display:none"]').forEach(el => {
+                        el.style.setProperty('display', 'block', 'important');
+                    });
+
+                    // Convert all canvases to images before cloning
+                    const canvases = mainContent.querySelectorAll('canvas');
+                    for (let canvas of canvases) {
+                        try {
+                            if (canvas.width > 0 && canvas.height > 0) {
+                                const img = iframeDoc.createElement('img');
+                                // Ensure the canvas is finished drawing
+                                img.src = canvas.toDataURL('image/png');
+                                img.style.width = (canvas.offsetWidth || canvas.width) + 'px';
+                                img.style.height = (canvas.offsetHeight || canvas.height) + 'px';
+                                img.style.display = 'block';
+                                img.className = 'captured-canvas-img';
+                                canvas.parentNode.insertBefore(img, canvas);
+                                canvas.setAttribute('data-html2canvas-ignore', 'true');
+                                canvas.style.display = 'none';
+                            }
+                        } catch (e) {
+                            console.warn(`Failed to capture canvas for ${title}:`, e);
+                        }
+                    }
+
+                    // Clone the content
+                    const clone = mainContent.cloneNode(true);
+                    
+                    // Hide buttons/modals in clone
+                    clone.querySelectorAll('button, .btn, .action-icons, .remove-btn, .edit-btn, .modal, .page-header button').forEach(el => el.style.display = 'none');
+                    
+                    // Force visibility for the clone
+                    clone.style.display = 'block';
+                    clone.style.visibility = 'visible';
+                    clone.style.margin = '0';
+                    clone.style.padding = '0';
+                    clone.style.background = 'white';
+                    clone.style.width = '1100px';
+                    clone.style.position = 'relative';
+                    clone.style.left = '0';
+
+                    // Title header for the section
+                    const sectionHeader = document.createElement('div');
+                    sectionHeader.style.padding = '20px 0';
+                    sectionHeader.innerHTML = `<h1 style="color:#2d2d6e; border-bottom: 2px solid #2d2d6e; padding-bottom: 10px; margin-bottom: 30px; margin-top: 20px;">Chapitre : ${title}</h1>`;
+                    
+                    // Add a page break BEFORE each section except the first one
+                    if (completed > 0) {
+                        const pageBreak = document.createElement('div');
+                        pageBreak.className = 'html2pdf__page-break';
+                        container.appendChild(pageBreak);
+                    }
+
+                    container.appendChild(sectionHeader);
+                    container.appendChild(clone);
+                } else {
+                    console.error(`Page content for ${title} is missing or empty.`);
+                    const errorMsg = document.createElement('div');
+                    errorMsg.innerHTML = `<div style="padding:20px; color:red; border:1px solid red; margin-top:20px;">
+                        <h3>Erreur : Le chapitre "${title}" n'a pas pu être chargé correctement.</h3>
+                        <p>Vérifiez que la page est accessible normalement.</p>
+                    </div>`;
+                    container.appendChild(errorMsg);
+                }
+                
+                document.body.removeChild(iframe);
+                completed++;
+            }
+
+            console.log('Starting final PDF generation');
+            bar.style.width = '100%';
+            status.innerText = 'Génération du PDF final...';
+
+            const opt = {
+                margin: [10, 10, 10, 10],
+                filename: 'Rapport_Complet_NovaRetail.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true,
+                    windowWidth: 1200
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            await html2pdf().set(opt).from(container).save();
+            console.log('PDF Export successful');
+
+        } catch (err) {
+            console.error('Batch Export Error:', err);
+            status.innerText = 'Erreur lors de l\'export.';
+            status.style.color = 'var(--danger)';
+            alert(`Erreur lors de l'export : ${err.message}`);
+        } finally {
+            container.style.display = 'none';
+            container.innerHTML = '';
+            overlay.classList.remove('active');
+        }
+    }
+</script>
+
+<style>
+    @keyframes spin { 100% { transform:rotate(360deg); } }
+    .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
+    .html2pdf__page-break { page-break-after: always; height: 0; }
+</style>
+{% endblock %}

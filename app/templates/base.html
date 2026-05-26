@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <nav class="sidebar">
@@ -43,6 +44,11 @@
                     <i class="ph ph-warning-octagon"></i> Risques
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.architecture') }}" class="nav-link {{ 'active' if '/architecture' in request.path }}">
+                    <i class="ph ph-intersect"></i> Architecture
+                </a>
+            </li>
 
             <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Pilotage</li>
 
@@ -66,6 +72,11 @@
                     <i class="ph ph-calendar-check"></i> Suivi d'Avancement
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.evenements') }}" class="nav-link {{ 'active' if '/evenements' in request.path }}">
+                    <i class="ph ph-lightning"></i> Journal des Évènements
+                </a>
+            </li>
 
             <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Financier</li>
             
@@ -75,8 +86,35 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ url_for('main.exploitation') }}" class="nav-link {{ 'active' if '/exploitation' in request.path }}">
+                    <i class="ph ph-coins"></i> Coûts d'Exploitation
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ url_for('main.budget') }}" class="nav-link {{ 'active' if '/budget' in request.path }}">
-                    <i class="ph ph-chart-pie-slice"></i> Budget
+                    <i class="ph ph-chart-pie-slice"></i> Suivi Budgétaire
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.rentabilite') }}" class="nav-link {{ 'active' if '/rentabilite' in request.path }}">
+                    <i class="ph ph-chart-line-up"></i> Rentabilité
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.devis') }}" class="nav-link {{ 'active' if '/devis' in request.path }}">
+                    <i class="ph ph-file-invoice"></i> Devis Client
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.roi') }}" class="nav-link {{ 'active' if '/roi' in request.path }}">
+                    <i class="ph ph-trend-up"></i> Calcul ROI
+                </a>
+            </li>
+
+            <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Reporting</li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.export_page') }}" class="nav-link {{ 'active' if '/export' in request.path }}">
+                    <i class="ph ph-printer"></i> Export Rapport
                 </a>
             </li>
         </ul>

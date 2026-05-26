@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="page-header">
+    <div>
+        <h1>Calcul du ROI & Rentabilité</h1>
+        <p class="subtitle">Analyse combinée des investissements (CAPEX), coûts d'exploitation (OPEX) et gains financiers.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary" onclick="exportToPDF()"><i class="ph ph-file-pdf"></i> Exporter en PDF</button>
+        <button class="btn btn-primary" onclick="saveROI()"><i class="ph ph-floppy-disk"></i> Enregistrer les données</button>
+    </div>
+</div>
+
+<!-- Key Performance Indicators -->
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-label">Investissement (CAPEX)</div>
+        <div class="stat-value">{{ "{:,.0f}".format(project_total).replace(',', ' ') }} €</div>
+        <div class="stat-sub">Coût de mise en œuvre</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Exploitation (OPEX) / an</div>
+        <div id="stat-opex" class="stat-value" style="color: var(--danger);">0 €</div>
+        <div class="stat-sub">Frais récurrents annuels</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Gains Annuels (Bruts)</div>
+        <div id="stat-annual-gains" class="stat-value" style="color: #10b981;">0 €</div>
+        <div class="stat-sub">Revenus + Économies / an</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">ROI Net (An 1)</div>
+        <div id="stat-roi" class="stat-value" style="color: var(--accent);">0 %</div>
+        <div class="stat-sub">(Gains - OPEX) / CAPEX</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Marge Annuelle (Net)</div>
+        <div id="stat-margin" class="stat-value" style="color: #059669;">0 €</div>
+        <div class="stat-sub">Gains - OPEX</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Break-even Month</div>
+        <div id="stat-breakeven" class="stat-value" style="color: #d97706;">0 mois</div>
+        <div class="stat-sub">Délai de rentabilisation</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Rentabilité Exploit.</div>
+        <div id="stat-exploit-rate" class="stat-value" style="color: #7c3aed;">0 %</div>
+        <div class="stat-sub">(CA - OPEX) / CA</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Points Morts OPEX</div>
+        <div id="stat-opex-coverage" class="stat-value" style="color: #2563eb;">0 j</div>
+        <div class="stat-sub">Jours de gains pour payer l'OPEX</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    <!-- Inputs -->
+    <div class="card" style="padding: 1.5rem;">
+        <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;">
+            <button id="tab-revenue" class="tab-btn active" onclick="switchTab('revenue')">Revenus (CA)</button>
+            <button id="tab-savings" class="tab-btn" onclick="switchTab('savings')">Économies (Temps)</button>
+        </div>
+
+        <input type="hidden" id="edit-index">
+        <input type="hidden" id="edit-type">
+
+        <!-- Revenue Panel -->
+        <div id="panel-revenue">
+            <div class="form-group">
+                <label>Désignation du revenu</label>
+                <input type="text" id="rev-desc" class="form-control" placeholder="ex: Ventes additionnelles NovaRetail">
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Montant (€)</label>
+                    <input type="number" id="rev-amount" class="form-control" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Récurrence</label>
+                    <select id="rev-recurrence" class="form-control">
+                        <option value="day">Par jour</option>
+                        <option value="week">Par semaine</option>
+                        <option value="month" selected>Par mois</option>
+                        <option value="year">Par an</option>
+                    </select>
+                </div>
+            </div>
+            <button id="btn-add-revenue" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addRevenue()">
+                <i class="ph ph-plus"></i> Ajouter cette source de revenu
+            </button>
+
+            <div style="margin-top: 1.5rem;">
+                <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem;">Sources de revenus enregistrées</h4>
+                <div id="revenue-list" class="mini-list"></div>
+            </div>
+        </div>
+
+        <!-- Savings Panel -->
+        <div id="panel-savings" style="display: none;">
+            <div class="form-group">
+                <label>Nom du profil / métier</label>
+                <input type="text" id="sav-profile" class="form-control" placeholder="ex: Gestionnaire de Stock">
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Salaire Brut Annuel (€)</label>
+                    <input type="number" id="sav-salary" class="form-control" placeholder="45000">
+                </div>
+                <div class="form-group">
+                    <label>% Charges Patronales</label>
+                    <input type="number" id="sav-charge" class="form-control" value="45">
+                </div>
+            </div>
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Temps gagné / jour (h)</label>
+                    <input type="number" id="sav-hours" class="form-control" value="1" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>Nb de personnes impactées</label>
+                    <input type="number" id="sav-count" class="form-control" value="1">
+                </div>
+            </div>
+            <button id="btn-add-saving" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addSaving()">
+                <i class="ph ph-plus"></i> Ajouter ce gain de temps
+            </button>
+
+            <div style="margin-top: 1.5rem;">
+                <h4 style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem;">Économies RH enregistrées</h4>
+                <div id="savings-list" class="mini-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chart -->
+    <div class="card">
+        <h3>Projection de Rentabilité (3 ans)</h3>
+        <div style="height: 350px;">
+            <canvas id="roi-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    <!-- Recap Table Gains -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+            <h3 style="margin: 0;">Récapitulatif des Gains Annuels</h3>
+        </div>
+        <table style="margin: 0;">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th style="text-align: right;">Base</th>
+                    <th style="text-align: right;">Total Annuel</th>
+                </tr>
+            </thead>
+            <tbody id="recap-tbody">
+                <!-- Injected by JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Distribution Chart Gains -->
+    <div class="card">
+        <h3>Répartition des Gains par Source</h3>
+        <div style="height: 250px;">
+            <canvas id="distribution-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- NEW SECTION: OPERATING COSTS RECAP -->
+<div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem;">
+    <!-- Recap Table Costs -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+            <h3 style="margin: 0;">Récapitulatif des Coûts d'Exploitation (OPEX)</h3>
+        </div>
+        <table style="margin: 0;">
+            <thead>
+                <tr>
+                    <th>Poste de dépense</th>
+                    <th>Catégorie</th>
+                    <th style="text-align: right;">Mensuel</th>
+                    <th style="text-align: right;">Annuel</th>
+                </tr>
+            </thead>
+            <tbody id="opex-tbody">
+                {% for cost in op_costs %}
+                <tr>
+                    <td style="font-weight: 600;">{{ cost.desc }}</td>
+                    <td><span class="badge">{{ cost.cat }}</span></td>
+                    <td style="text-align: right;">{{ "{:,.0f}".format(cost.monthly).replace(',', ' ') }} €</td>
+                    <td style="text-align: right; font-weight: 700;">{{ "{:,.0f}".format(cost.annual).replace(',', ' ') }} €</td>
+                </tr>
+                {% endfor %}
+                {% if not op_costs %}
+                <tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Aucun coût d'exploitation défini.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Distribution Chart Costs -->
+    <div class="card">
+        <h3>Répartition des Coûts par Catégorie</h3>
+        <div style="height: 250px;">
+            <canvas id="opex-dist-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tab-btn { background: none; border: none; padding: 0.75rem 1rem; font-family: inherit; font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
+    .tab-btn:hover { color: var(--accent); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    
+    .mini-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .mini-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: var(--bg-body); border-radius: 6px; border: 1px solid var(--border-light); }
+    .mini-item-info { font-size: 0.85rem; font-weight: 500; }
+    .mini-item-val { font-weight: 700; color: #10b981; }
+    .action-icons { display: flex; gap: 10px; align-items: center; }
+    .edit-btn { color: var(--accent); cursor: pointer; font-size: 1rem; }
+    .remove-btn { color: #ef4444; cursor: pointer; font-size: 1rem; }
+</style>
+
+<script>
+    let roiData = {{ roi_data|tojson }};
+    const PROJECT_TOTAL = {{ project_total }};
+    const opCosts = {{ op_costs|tojson }};
+    let roiChart = null;
+    let distChart = null;
+    let opexDistChart = null;
+
+    const ANNUAL_OPEX = opCosts.reduce((sum, c) => sum + c.annual, 0);
+
+    function switchTab(tab) {
+        document.getElementById('tab-revenue').classList.toggle('active', tab === 'revenue');
+        document.getElementById('tab-savings').classList.toggle('active', tab === 'savings');
+        document.getElementById('panel-revenue').style.display = tab === 'revenue' ? 'block' : 'none';
+        document.getElementById('panel-savings').style.display = tab === 'savings' ? 'block' : 'none';
+        resetForm();
+    }
+
+    function resetForm() {
+        document.getElementById('edit-index').value = '';
+        document.getElementById('edit-type').value = '';
+        document.getElementById('rev-desc').value = '';
+        document.getElementById('rev-amount').value = '';
+        document.getElementById('sav-profile').value = '';
+        document.getElementById('sav-salary').value = '';
+        document.getElementById('btn-add-revenue').innerHTML = '<i class="ph ph-plus"></i> Ajouter cette source';
+        document.getElementById('btn-add-saving').innerHTML = '<i class="ph ph-plus"></i> Ajouter ce gain';
+    }
+
+    function addRevenue() {
+        const desc = document.getElementById('rev-desc').value;
+        const amount = parseFloat(document.getElementById('rev-amount').value);
+        const recurrence = document.getElementById('rev-recurrence').value;
+        const editIdx = document.getElementById('edit-index').value;
+        if (!desc || isNaN(amount)) return;
+        const entry = { desc, amount, recurrence };
+        if (editIdx !== '') roiData.revenues[editIdx] = entry;
+        else roiData.revenues.push(entry);
+        resetForm(); updateUI();
+    }
+
+    function addSaving() {
+        const profile = document.getElementById('sav-profile').value;
+        const salary = parseFloat(document.getElementById('sav-salary').value);
+        const charge = parseFloat(document.getElementById('sav-charge').value);
+        const hours = parseFloat(document.getElementById('sav-hours').value);
+        const count = parseInt(document.getElementById('sav-count').value);
+        const editIdx = document.getElementById('edit-index').value;
+        if (!profile || isNaN(salary)) return;
+        const tjm = (salary * (1 + (charge / 100))) / 251;
+        const dailySaving = (hours / 7) * tjm * count;
+        const entry = { profile, salary, charge, hours, count, dailySaving };
+        if (editIdx !== '') roiData.savings[editIdx] = entry;
+        else roiData.savings.push(entry);
+        resetForm(); updateUI();
+    }
+
+    function editEntry(type, index) {
+        document.getElementById('edit-index').value = index;
+        document.getElementById('edit-type').value = type;
+        if (type === 'revenue') {
+            const r = roiData.revenues[index];
+            document.getElementById('rev-desc').value = r.desc;
+            document.getElementById('rev-amount').value = r.amount;
+            document.getElementById('rev-recurrence').value = r.recurrence;
+            document.getElementById('btn-add-revenue').innerHTML = '<i class="ph ph-check"></i> Mettre à jour';
+        } else {
+            const s = roiData.savings[index];
+            document.getElementById('sav-profile').value = s.profile;
+            document.getElementById('sav-salary').value = s.salary;
+            document.getElementById('sav-charge').value = s.charge;
+            document.getElementById('sav-hours').value = s.hours;
+            document.getElementById('sav-count').value = s.count;
+            document.getElementById('btn-add-saving').innerHTML = '<i class="ph ph-check"></i> Mettre à jour';
+        }
+    }
+
+    function removeRevenue(index) { if(confirm("Supprimer ce revenu ?")) { roiData.revenues.splice(index, 1); updateUI(); } }
+    function removeSaving(index) { if(confirm("Supprimer ce gain ?")) { roiData.savings.splice(index, 1); updateUI(); } }
+
+    function updateUI() {
+        renderLists();
+        calculateROI();
+        renderChart();
+        renderRecapTable();
+        renderDistributionChart();
+        renderOpexDistribution();
+    }
+
+    function renderLists() {
+        const revList = document.getElementById('revenue-list');
+        revList.innerHTML = '';
+        roiData.revenues.forEach((r, i) => {
+            const annual = r.recurrence === 'day' ? r.amount * 251 : r.recurrence === 'week' ? r.amount * 52 : r.recurrence === 'month' ? r.amount * 12 : r.amount;
+            revList.innerHTML += `
+                <div class="mini-item">
+                    <div class="mini-item-info">${r.desc} <span style="font-size:0.7rem; color:var(--text-secondary)">(${Math.round(annual).toLocaleString()}€/an)</span></div>
+                    <div class="action-icons">
+                        <i class="ph ph-pencil-simple edit-btn" onclick="editEntry('revenue', ${i})"></i>
+                        <i class="ph ph-trash remove-btn" onclick="removeRevenue(${i})"></i>
+                    </div>
+                </div>
+            `;
+        });
+
+        const savList = document.getElementById('savings-list');
+        savList.innerHTML = '';
+        roiData.savings.forEach((s, i) => {
+            const annual = s.dailySaving * 251;
+            savList.innerHTML += `
+                <div class="mini-item">
+                    <div class="mini-item-info">${s.profile} <span style="font-size:0.7rem; color:var(--text-secondary)">(${Math.round(annual).toLocaleString()}€/an)</span></div>
+                    <div class="action-icons">
+                        <i class="ph ph-pencil-simple edit-btn" onclick="editEntry('saving', ${i})"></i>
+                        <i class="ph ph-trash remove-btn" onclick="removeSaving(${i})"></i>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function calculateROI() {
+        let annualRevenue = 0;
+        roiData.revenues.forEach(r => annualRevenue += r.recurrence === 'day' ? r.amount * 251 : r.recurrence === 'week' ? r.amount * 52 : r.recurrence === 'month' ? r.amount * 12 : r.amount);
+        let annualSavings = 0;
+        roiData.savings.forEach(s => annualSavings += s.dailySaving * 251);
+
+        const totalAnnualGain = annualRevenue + annualSavings;
+        const netAnnualGain = totalAnnualGain - ANNUAL_OPEX;
+        const roiPercent = PROJECT_TOTAL > 0 ? (netAnnualGain / PROJECT_TOTAL) * 100 : 0;
+        
+        // Break-even calculation (CAPEX / Monthly Net Gain)
+        const monthlyNetGain = netAnnualGain / 12;
+        const breakEvenMonths = monthlyNetGain > 0 ? (PROJECT_TOTAL / monthlyNetGain) : 0;
+
+        // Rentabilité d'exploitation: ((CA - OPEX) / CA)
+        const exploitRate = annualRevenue > 0 ? ((annualRevenue - ANNUAL_OPEX) / annualRevenue) * 100 : 0;
+
+        // Coverage OPEX (days of work needed to pay annual opex)
+        const dailyGain = totalAnnualGain / 251;
+        const opexCoverageDays = dailyGain > 0 ? (ANNUAL_OPEX / dailyGain) : 0;
+
+        document.getElementById('stat-opex').innerText = Math.round(ANNUAL_OPEX).toLocaleString() + ' €';
+        document.getElementById('stat-annual-gains').innerText = Math.round(totalAnnualGain).toLocaleString() + ' €';
+        document.getElementById('stat-roi').innerText = Math.round(roiPercent) + ' %';
+        document.getElementById('stat-margin').innerText = Math.round(netAnnualGain).toLocaleString() + ' €';
+        document.getElementById('stat-breakeven').innerText = (breakEvenMonths > 0 && breakEvenMonths < 100) ? Math.round(breakEvenMonths) + ' mois' : '∞';
+        document.getElementById('stat-exploit-rate').innerText = Math.round(exploitRate) + ' %';
+        document.getElementById('stat-opex-coverage').innerText = Math.round(opexCoverageDays) + ' j';
+    }
+
+    function renderRecapTable() {
+        const tbody = document.getElementById('recap-tbody');
+        tbody.innerHTML = '';
+        roiData.revenues.forEach(r => {
+            const annual = r.recurrence === 'day' ? r.amount * 251 : r.recurrence === 'week' ? r.amount * 52 : r.recurrence === 'month' ? r.amount * 12 : r.amount;
+            tbody.innerHTML += `<tr><td>${r.desc}</td><td><span class="badge" style="background:#dcfce7; color:#166534">Revenu</span></td><td style="text-align:right">${r.amount}€/${r.recurrence}</td><td style="text-align:right; font-weight:700">${Math.round(annual).toLocaleString()} €</td></tr>`;
+        });
+        roiData.savings.forEach(s => {
+            const annual = s.dailySaving * 251;
+            tbody.innerHTML += `<tr><td>${s.profile}</td><td><span class="badge" style="background:#e0e7ff; color:#3730a3">Économie</span></td><td style="text-align:right">${s.hours}h/j</td><td style="text-align:right; font-weight:700">${Math.round(annual).toLocaleString()} €</td></tr>`;
+        });
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('roi-chart').getContext('2d');
+        if (roiChart) roiChart.destroy();
+        let annualGain = 0;
+        roiData.revenues.forEach(r => annualGain += r.recurrence === 'day' ? r.amount * 251 : r.recurrence === 'week' ? r.amount * 52 : r.recurrence === 'month' ? r.amount * 12 : r.amount);
+        roiData.savings.forEach(s => annualGain += s.dailySaving * 251);
+        
+        const labels = ['T0', '6 mois', '12 mois', '18 mois', '24 mois', '30 mois', '36 mois'];
+        const investmentData = Array(7).fill(PROJECT_TOTAL);
+        const cumulativeGains = labels.map((_, i) => (annualGain / 2) * i);
+        const cumulativeOpex = labels.map((_, i) => (ANNUAL_OPEX / 2) * i);
+        const cumulativeTotalCost = labels.map((_, i) => PROJECT_TOTAL + (ANNUAL_OPEX / 2) * i);
+
+        roiChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets: [
+                { label: 'Gains cumulés (Brut)', data: cumulativeGains, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.05)', fill: true, tension: 0.4 },
+                { label: 'Investissement + OPEX', data: cumulativeTotalCost, borderColor: '#ef4444', borderDash: [2, 2], fill: false, tension: 0 },
+                { label: 'OPEX Seul (Exploitation)', data: cumulativeOpex, borderColor: '#f97316', borderDash: [5, 5], fill: false, tension: 0.4 },
+                { label: 'Investissement (CAPEX)', data: investmentData, borderColor: '#94a3b8', borderDash: [10, 5], fill: false, tension: 0 }
+            ]},
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() + ' €' } } } }
+        });
+    }
+
+    function renderDistributionChart() {
+        const ctx = document.getElementById('distribution-chart').getContext('2d');
+        if (distChart) distChart.destroy();
+        let tRev = 0, tSav = 0;
+        roiData.revenues.forEach(r => tRev += r.recurrence === 'day' ? r.amount * 251 : r.recurrence === 'week' ? r.amount * 52 : r.recurrence === 'month' ? r.amount * 12 : r.amount);
+        roiData.savings.forEach(s => tSav += s.dailySaving * 251);
+        distChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: ['Revenus directs', 'Économies indirectes'], datasets: [{ data: [tRev, tSav], backgroundColor: ['#10b981', '#6366f1'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    function renderOpexDistribution() {
+        const ctx = document.getElementById('opex-dist-chart').getContext('2d');
+        if (opexDistChart) opexDistChart.destroy();
+        
+        const catTotals = {};
+        opCosts.forEach(c => catTotals[c.cat] = (catTotals[c.cat] || 0) + c.annual);
+
+        opexDistChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: { 
+                labels: Object.keys(catTotals), 
+                datasets: [{ 
+                    data: Object.values(catTotals), 
+                    backgroundColor: ['#ef4444', '#f97316', '#facc15', '#84cc16', '#06b6d4', '#6366f1'], 
+                    borderWidth: 0 
+                }] 
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    function saveROI() {
+        fetch('/api/save-roi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(roiData) })
+        .then(() => alert('Données ROI enregistrées !'));
+    }
+
+    updateUI();
+</script>
+{% endblock %}

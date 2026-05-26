@@ -64,6 +64,7 @@
     <div style="display: flex; gap: 0.75rem;">
         <a href="{{ url_for('main.contexte') }}" class="btn btn-primary" style="text-decoration: none;">Voir le contexte</a>
         <a href="{{ url_for('main.backlog') }}" class="btn btn-secondary" style="text-decoration: none;">Explorer le backlog</a>
+        <button class="btn btn-secondary" onclick="exportToPDF()"><i class="ph ph-file-pdf"></i> Exporter en PDF</button>
     </div>
 </div>
 {% endblock %}

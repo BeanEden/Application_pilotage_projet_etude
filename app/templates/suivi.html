@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 <div class="page-header">
     <div>
         <h1>Suivi d'Avancement</h1>
@@ -53,29 +55,55 @@
     </div>
 </div>
 
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">Dérive Budgétaire (Budget Initial vs Actuel)</h3>
+    <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-around; flex-wrap: wrap;">
+        <div style="text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Budget Initial (Originel)</div>
+            <div id="drift-initial" style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">0 €</div>
+        </div>
+        <div style="font-size: 1.5rem; color: var(--border); font-weight: 300;">+</div>
+        <div style="text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Tâches Ajoutées</div>
+            <div id="drift-tasks" style="font-size: 1.5rem; font-weight: 800; color: #d97706;">0 €</div>
+        </div>
+        <div style="font-size: 1.5rem; color: var(--border); font-weight: 300;">+</div>
+        <div style="text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Évènements (Net)</div>
+            <div id="drift-events" style="font-size: 1.5rem; font-weight: 800; color: #dc2626;">0 €</div>
+        </div>
+        <div style="font-size: 1.5rem; color: var(--border); font-weight: 300;">=</div>
+        <div style="text-align: center;">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Nouveau Budget Estimé</div>
+            <div id="drift-final" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-vivid);">0 €</div>
+        </div>
+    </div>
+    <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+        <h3 style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-secondary);">Évolution : Budget Initial vs Nouveau Budget Estimé</h3>
+        <div style="height: 250px;"><canvas id="drift-chart"></canvas></div>
+    </div>
+</div>
+
 <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem;">
     <div class="card" style="padding: 0; overflow: hidden;">
-        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border);">
+        <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
             <h3 id="list-title" style="margin: 0; font-size: 1rem;">Détail des tâches</h3>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Grouper par :</span>
+                <select id="group-suivi" class="form-control" style="width: auto; padding: 4px 8px; height: 32px;" onchange="updateMonitoring()">
+                    <option value="none">Aucun</option>
+                    <option value="sprint">Sprint</option>
+                    <option value="bucket">Bucket</option>
+                </select>
+            </div>
         </div>
-        <div style="max-height: 400px; overflow-y: auto;">
-            <table id="tasks-table">
-                <thead>
-                    <tr>
-                        <th style="width: 80px;">ID</th>
-                        <th>Tâche</th>
-                        <th>Sprint</th>
-                        <th style="text-align: right;">Coût</th>
-                    </tr>
-                </thead>
-                <tbody id="tasks-tbody">
-                </tbody>
-            </table>
+        <div id="tasks-list-container" style="max-height: 500px; overflow-y: auto;">
+            <!-- Tables injected by JS -->
         </div>
     </div>
 
     <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 350px;">
-        <h3 id="gauge-title" style="margin-bottom: 1.5rem;">Progression Globale</h3>
+        <h3 id="gauge-title" style="margin-bottom: 1.5rem;">Avancement Global</h3>
         <div style="position: relative; width: 180px; height: 180px;">
             <svg viewBox="0 0 36 36" style="transform: rotate(-90deg); width: 100%; height: 100%;">
                 <circle cx="18" cy="18" r="16" fill="none" stroke="var(--border-light)" stroke-width="3" />
@@ -97,9 +125,20 @@
 const rawTasks = {{ tasks|tojson }};
 const collaborators = {{ collaborators|tojson }};
 const satelliteCosts = {{ satellite_costs|tojson }};
+const rawEvents = {{ events|tojson|safe }};
 const weeks = {{ weeks|tojson }};
+Chart.register(ChartDataLabels);
 
 let currentMode = 'spent'; 
+let driftChart = null;
+
+function getTaskDays(t) {
+    if (!t.duration) return 5;
+    const dStr = String(t.duration);
+    if (dStr.includes('sem')) return (parseInt(dStr) || 1) * 5;
+    if (dStr.includes('j')) return parseInt(dStr) || 5;
+    return 5;
+}
 
 function switchMode(mode, btn) {
     currentMode = mode;
@@ -119,6 +158,7 @@ function setSlider(val) {
 
 function updateMonitoring() {
     const weekIdx = parseInt(document.getElementById('date-slider').value);
+    const groupKey = document.getElementById('group-suivi').value;
     document.getElementById('current-date-display').innerText = weeks[weekIdx];
     document.getElementById('slider-week-label').innerText = `Semaine ${weekIdx + 1}`;
 
@@ -128,14 +168,148 @@ function updateMonitoring() {
 
     // Total Project Budget & Workload
     rawTasks.forEach(t => {
-        const days = t.duration.includes('2 sem') ? 10 : 5;
+        const days = getTaskDays(t);
         totalWorkDays += days;
-        t.assignees.forEach(name => {
+        (t.assignees || []).forEach(name => {
             const co = collaborators.find(c => c.name === name);
-            if(co) totalBudget += co.tjm_applied * days;
+            if(co) totalBudget += Number(co.tjm_applied || 0) * days;
         });
     });
-    satelliteCosts.forEach(c => totalBudget += c.amount);
+    satelliteCosts.forEach(c => totalBudget += Number(c.amount || 0));
+    
+    let totalEventsNet = 0;
+    rawEvents.forEach(e => totalEventsNet += (Number(e.cost || 0) - Number(e.saving || 0)));
+    totalBudget += totalEventsNet;
+
+    // Drift Calculation & Chart
+    let budgetOriginel = 0;
+    let budgetAjoute = 0;
+    
+    let wInit = Array(weeks.length).fill(0);
+    let wNew = Array(weeks.length).fill(0);
+    
+    satelliteCosts.forEach(c => {
+        const amt = Number(c.amount || 0);
+        
+        let sprint = 1;
+        if (c.attr_type === 'Sprint') sprint = parseInt(c.attr_val.split(' ')[1]) || 1;
+        const w = Math.min((sprint - 1) * 2, weeks.length - 1);
+        wInit[w] += amt;
+        wNew[w] += amt;
+        
+        if (w <= weekIdx) {
+            budgetOriginel += amt;
+        }
+    });
+    
+    rawTasks.forEach(t => {
+        const dDays = getTaskDays(t);
+        const dWeeks = Math.ceil(dDays / 5);
+        let taskCost = 0;
+        
+        (t.assignees || []).forEach(name => {
+            const co = collaborators.find(c => c.name === name);
+            if(co) taskCost += co.tjm_applied * dDays;
+        });
+        
+        const isExtra = t.type === 'Tâche additionnelle' || t.type === 'Évolution d\'une tâche existante';
+        const costPerWeek = taskCost / dWeeks;
+        
+        for (let i = 0; i < dWeeks; i++) {
+            const w = (t.start_week || 0) + i;
+            if (w < weeks.length) {
+                if (!isExtra) wInit[w] += costPerWeek;
+                wNew[w] += costPerWeek;
+                
+                if (w <= weekIdx) {
+                    if (isExtra) budgetAjoute += costPerWeek;
+                    else budgetOriginel += costPerWeek;
+                }
+            }
+        }
+    });
+    
+    let netEvents = 0;
+    const projectStartDate = new Date("2026-05-12T00:00:00Z");
+    rawEvents.forEach(e => {
+        const net = (Number(e.cost || 0) - Number(e.saving || 0));
+        
+        if (e.date) {
+            const d = new Date(e.date + "T00:00:00Z");
+            const diffDays = (d - projectStartDate) / (1000 * 60 * 60 * 24);
+            let w = Math.floor(diffDays / 7);
+            if (w < 0) w = 0;
+            if (w >= weeks.length) w = weeks.length - 1;
+            wNew[w] += net;
+            
+            if (w <= weekIdx) netEvents += net;
+        } else {
+            wNew[0] += net;
+            if (0 <= weekIdx) netEvents += net;
+        }
+    });
+    
+    document.getElementById('drift-initial').innerText = Math.round(budgetOriginel).toLocaleString() + ' €';
+    document.getElementById('drift-tasks').innerText = '+' + Math.round(budgetAjoute).toLocaleString() + ' €';
+    
+    const eventEl = document.getElementById('drift-events');
+    if (netEvents >= 0) {
+        eventEl.innerText = '+' + Math.round(netEvents).toLocaleString() + ' €';
+        eventEl.style.color = '#dc2626'; 
+    } else {
+        eventEl.innerText = Math.round(netEvents).toLocaleString() + ' €';
+        eventEl.style.color = '#16a34a'; 
+    }
+    
+    const nouveauBudget = budgetOriginel + budgetAjoute + netEvents;
+    const increasePct = budgetOriginel > 0 ? ((nouveauBudget - budgetOriginel) / budgetOriginel) * 100 : 0;
+    const increaseStr = increasePct >= 0 ? `+${increasePct.toFixed(1)}%` : `${increasePct.toFixed(1)}%`;
+    const increaseColor = increasePct >= 0 ? '#dc2626' : '#16a34a';
+
+    document.getElementById('drift-final').innerHTML = `${Math.round(nouveauBudget).toLocaleString()} € <br><span style="font-size: 0.75rem; font-weight: 700; color: ${increaseColor}; background: ${increaseColor}15; padding: 2px 6px; border-radius: 4px;">${increaseStr}</span>`;
+    
+    let cumInit = 0, cumNew = 0;
+    const cumInitData = wInit.map((v, i) => { 
+        if (i > weekIdx) return null;
+        cumInit += v; return cumInit; 
+    });
+    const cumNewData = wNew.map((v, i) => { 
+        if (i > weekIdx) return null;
+        cumNew += v; return cumNew; 
+    });
+
+    if (driftChart) driftChart.destroy();
+    driftChart = new Chart(document.getElementById('drift-chart'), {
+        type: 'line',
+        data: {
+            labels: weeks,
+            datasets: [
+                {
+                    label: 'Budget Initial',
+                    data: cumInitData,
+                    borderColor: '#64748b',
+                    backgroundColor: 'transparent',
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    tension: 0.3
+                },
+                {
+                    label: 'Nouveau Budget Estimé',
+                    data: cumNewData,
+                    borderColor: '#0a84a0',
+                    backgroundColor: 'rgba(10, 132, 160, 0.1)',
+                    fill: true,
+                    borderWidth: 3,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { datalabels: { display: false } },
+            scales: { y: { grid: { color: '#f2f2f7' } }, x: { grid: { display: false } } }
+        }
+    });
 
     let sitTasks = [];
     let sitWork = 0;
@@ -143,12 +317,12 @@ function updateMonitoring() {
 
     // Process tasks based on the selected week situation
     rawTasks.forEach(t => {
-        const days = t.duration.includes('2 sem') ? 10 : 5;
-        const startWeek = t.start_week;
-        const endWeek = startWeek + (t.duration.includes('2 sem') ? 2 : 1);
+        const days = getTaskDays(t);
+        const startWeek = t.start_week || 0;
+        const endWeek = startWeek + Math.ceil(days / 5);
         
         let taskCost = 0;
-        t.assignees.forEach(name => {
+        (t.assignees || []).forEach(name => {
             const co = collaborators.find(c => c.name === name);
             if(co) taskCost += co.tjm_applied * days;
         });
@@ -175,24 +349,30 @@ function updateMonitoring() {
     let totalSatSpent = 0;
     satelliteCosts.forEach(c => {
         let isSatSpent = false;
+        const cAmount = Number(c.amount || 0);
         if (c.attr_type === 'Sprint') {
             const sprintNum = parseInt(c.attr_val.split(' ')[1]);
-            if (sprintNum <= Math.floor(weekIdx / 2.5) + 1) isSatSpent = true; // Approx sprint distribution
-        } else if (c.attr_type === 'Global' || c.attr_type === 'Bucket') {
-            // Assume distributed over time
+            if (sprintNum <= Math.floor(weekIdx / 2.5) + 1) isSatSpent = true; 
+        } else if (c.attr_type === 'Global' || c.attr_type === 'Bucket' || c.attr_type === 'Collaborator') {
             const progressRatio = (weekIdx + 1) / weeks.length;
-            if (currentMode === 'spent') sitBudget += c.amount * progressRatio;
-            else sitBudget += c.amount * (1 - progressRatio);
-            totalSatSpent += c.amount * progressRatio;
+            if (currentMode === 'spent') sitBudget += cAmount * progressRatio;
+            else sitBudget += cAmount * (1 - progressRatio);
+            totalSatSpent += cAmount * progressRatio;
         }
         
         if (isSatSpent) {
-            if (currentMode === 'spent') sitBudget += c.amount;
-            totalSatSpent += c.amount;
+            if (currentMode === 'spent') sitBudget += cAmount;
+            totalSatSpent += cAmount;
         } else {
-            if (currentMode === 'remaining') sitBudget += c.amount;
+            if (currentMode === 'remaining') sitBudget += cAmount;
         }
     });
+    
+    if (currentMode === 'spent') {
+        sitBudget += netEvents;
+    } else {
+        sitBudget += (totalEventsNet - netEvents);
+    }
 
     // Update UI Labels
     if (currentMode === 'spent') {
@@ -217,36 +397,85 @@ function updateMonitoring() {
     document.getElementById('val-work').innerText = Math.round(sitWork) + ' j';
     document.getElementById('sub-work').innerText = `sur ${totalWorkDays} j total`;
 
+    const pctBudget = totalBudget > 0 ? (sitBudget / totalBudget) * 100 : 0;
     document.getElementById('val-budget').innerText = Math.round(sitBudget).toLocaleString() + ' €';
-    document.getElementById('sub-budget').innerText = `sur ${Math.round(totalBudget).toLocaleString()} € total`;
+    document.getElementById('sub-budget').innerHTML = `sur ${Math.round(totalBudget).toLocaleString()} € total <span style="font-weight: 700; color: var(--accent); margin-left: 4px;">(${pctBudget.toFixed(1)}%)</span>`;
 
-    // Progress Circle logic: always calculate completion first
+    // Progress Circle logic
     let completedBudget = 0;
     rawTasks.forEach(t => {
-        const endWeek = t.start_week + (t.duration.includes('2 sem') ? 2 : 1);
+        const days = getTaskDays(t);
+        const endWeek = (t.start_week || 0) + Math.ceil(days / 5);
         if (endWeek <= weekIdx + 1) {
-            const days = t.duration.includes('2 sem') ? 10 : 5;
-            t.assignees.forEach(name => {
+            (t.assignees || []).forEach(name => {
                 const co = collaborators.find(c => c.name === name);
                 if(co) completedBudget += co.tjm_applied * days;
             });
         }
     });
-    completedBudget += totalSatSpent;
+    completedBudget += totalSatSpent + netEvents;
 
-    const completionRate = (completedBudget / totalBudget) * 100;
+    const completionRate = totalBudget > 0 ? (completedBudget / totalBudget) * 100 : 0;
     const finalGaugeVal = currentMode === 'spent' ? completionRate : (100 - completionRate);
     
     document.getElementById('progress-circle').setAttribute('stroke-dasharray', `${finalGaugeVal}, 100`);
     document.getElementById('progress-text').innerText = Math.round(finalGaugeVal) + '%';
 
-    // Table Rendering
-    const tbody = document.getElementById('tasks-tbody');
-    tbody.innerHTML = '';
-    sitTasks.forEach(t => {
+    // Grouping & Rendering Table
+    const container = document.getElementById('tasks-list-container');
+    container.innerHTML = '';
+
+    if (groupKey === 'none') {
+        container.appendChild(createTable(sitTasks));
+    } else {
+        const groups = {};
+        sitTasks.forEach(t => {
+            const key = groupKey === 'sprint' ? `Sprint ${t.sprint}` : t.bucket;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(t);
+        });
+
+        Object.keys(groups).sort().forEach(key => {
+            const header = document.createElement('div');
+            header.style.cssText = 'padding: 0.75rem 1.25rem; background: var(--bg-body); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border-light);';
+            header.innerText = key;
+            container.appendChild(header);
+            container.appendChild(createTable(groups[key]));
+        });
+    }
+}
+
+function createTable(tasks) {
+    let totalSegCost = 0;
+    let totalSegWork = 0;
+    
+    tasks.forEach(t => {
+        const days = getTaskDays(t);
+        totalSegWork += days;
+        (t.assignees || []).forEach(name => {
+            const co = collaborators.find(c => c.name === name);
+            if(co) totalSegCost += co.tjm_applied * days;
+        });
+    });
+
+    const table = document.createElement('table');
+    table.style.margin = '0';
+    table.innerHTML = `
+        <thead><tr><th style="width: 80px;">ID</th><th>Tâche</th><th style="text-align: right;">JH</th><th style="text-align: right;">Coût</th></tr></thead>
+        <tbody></tbody>
+        <tfoot>
+            <tr style="background: var(--bg-body); font-weight: 800;">
+                <td colspan="2" style="text-transform: uppercase; font-size: 0.7rem; color: var(--text-secondary);">Total Segment</td>
+                <td style="text-align: right;">${totalSegWork}j</td>
+                <td style="text-align: right; color: var(--accent);">${Math.round(totalSegCost).toLocaleString()} €</td>
+            </tr>
+        </tfoot>
+    `;
+    const tbody = table.querySelector('tbody');
+    tasks.forEach(t => {
         let taskCost = 0;
-        const days = t.duration.includes('2 sem') ? 10 : 5;
-        t.assignees.forEach(name => {
+        const days = getTaskDays(t);
+        (t.assignees || []).forEach(name => {
             const co = collaborators.find(c => c.name === name);
             if(co) taskCost += co.tjm_applied * days;
         });
@@ -254,11 +483,12 @@ function updateMonitoring() {
         row.innerHTML = `
             <td><span class="mono" style="color: var(--accent); font-weight:800;">${t.id}</span></td>
             <td style="font-weight: 500;">${t.task}</td>
-            <td><span class="badge">S${t.sprint}</span></td>
-            <td style="text-align: right; font-weight:700; color: var(--accent);">${Math.round(taskCost).toLocaleString()} €</td>
+            <td style="text-align: right; font-size: 0.85rem; color: var(--text-secondary);">${days}j</td>
+            <td style="text-align: right; font-weight: 700; color: var(--accent);">${Number(taskCost).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €</td>
         `;
         tbody.appendChild(row);
     });
+    return table;
 }
 
 updateMonitoring();

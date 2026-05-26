@@ -7,6 +7,15 @@
         <p class="subtitle">Gestion interactive des tâches et des ressources du projet.</p>
     </div>
     <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <button class="btn btn-secondary" onclick="exportToPDF()"><i class="ph ph-file-pdf"></i> Exporter en PDF</button>
+        <div style="background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 2px;">
+            <select id="filter-task-type" class="form-control" style="border: none; background: transparent; height: 100%; font-size: 0.9rem;" onchange="renderBacklog()">
+                <option value="all">Tous types</option>
+                <option value="Tâche originelle">Originelle</option>
+                <option value="Tâche additionnelle">Additionnelle</option>
+                <option value="Évolution d'une tâche existante">Évolution</option>
+            </select>
+        </div>
         <div style="background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 2px;">
             <button class="btn-group" onclick="switchView('sprint', this)" id="btn-sprint" style="background: var(--accent); color: white;">Par Sprint</button>
             <button class="btn-group" onclick="switchView('bucket', this)" id="btn-bucket" style="background: transparent; color: var(--text-secondary);">Par Bucket</button>
@@ -24,8 +33,8 @@
         <input type="hidden" id="edit-task-old-id">
         <div class="grid-cols-2">
             <div class="form-group">
-                <label>ID Tâche</label>
-                <input type="text" id="form-task-id" class="form-control" placeholder="ex: C0-1">
+                <label>ID Tâche (Auto)</label>
+                <input type="text" id="form-task-id" class="form-control" readonly style="background-color: var(--bg-body); cursor: not-allowed;">
             </div>
             <div class="form-group">
                 <label>Sprint</label>
@@ -35,10 +44,18 @@
                 </select>
             </div>
         </div>
+        <div class="form-group">
+            <label>Nom de la tâche</label>
+            <input type="text" id="form-task-name" class="form-control">
+        </div>
         <div class="grid-cols-2">
             <div class="form-group">
-                <label>Nom de la tâche</label>
-                <input type="text" id="form-task-name" class="form-control">
+                <label>Type de tâche</label>
+                <select id="form-task-type" class="form-control">
+                    <option value="Tâche originelle">Tâche originelle</option>
+                    <option value="Tâche additionnelle">Tâche additionnelle</option>
+                    <option value="Évolution d'une tâche existante">Évolution d'une tâche existante</option>
+                </select>
             </div>
             <div class="form-group">
                 <label>Bucket</label>
@@ -51,17 +68,31 @@
             </div>
         </div>
         <div class="form-group">
-            <label>Assigné à (séparés par virgule)</label>
-            <input type="text" id="form-task-assignees" class="form-control" placeholder="Jean-Corentin LOIRAT, Clément METOIS">
-        </div>
-        <div class="grid-cols-2">
-            <div class="form-group">
-                <label>Durée</label>
-                <input type="text" id="form-task-duration" class="form-control" placeholder="ex: 1 sem">
+            <label>Assigné à</label>
+            <div id="form-task-assignees-container" class="form-control" style="height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.5rem; background: var(--bg-body);">
+                {% for c in collaborators %}
+                <label style="display: flex; align-items: center; gap: 0.5rem; margin: 0; cursor: pointer; font-weight: 500;">
+                    <input type="checkbox" value="{{ c.name }}" class="assignee-checkbox"> {{ c.name }}
+                </label>
+                {% endfor %}
             </div>
-            <div class="form-group">
-                <label>Dépendances</label>
-                <input type="text" id="form-task-deps" class="form-control" placeholder="ex: A1-5, B1-5">
+        </div>
+        <div class="form-group">
+            <label>Dépendances</label>
+            <div id="form-task-deps-container" class="form-control" style="height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.5rem; background: var(--bg-body);">
+                <!-- Rempli dynamiquement -->
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Durée</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="number" step="0.5" id="form-task-duration-val" class="form-control" style="flex: 1;" placeholder="ex: 1">
+                <select id="form-task-duration-unit" class="form-control" style="flex: 1;">
+                    <option value="h">Heure(s)</option>
+                    <option value="j">Jour(s)</option>
+                    <option value="sem">Semaine(s)</option>
+                    <option value="mois">Mois</option>
+                </select>
             </div>
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
@@ -72,19 +103,24 @@
 </div>
 
 <script>
-let allTasks = [
-    {% for task in tasks %}
-    { id: "{{ task.id }}", task: "{{ task.task }}", sprint: {{ task.sprint }}, duration: "{{ task.duration }}", assignees: {{ task.assignees|tojson }}, deps: "{{ task.deps }}", bucket: "{{ task.bucket }}" },
-    {% endfor %}
-];
+let allTasks = {{ tasks|tojson|safe }};
 
 let currentGrouping = 'sprint';
 
 function renderBacklog() {
     const container = document.getElementById('backlog-container');
     container.innerHTML = '';
+    const typeFilter = document.getElementById('filter-task-type') ? document.getElementById('filter-task-type').value : 'all';
+    
     const groups = {};
-    allTasks.forEach(task => { const k = task[currentGrouping] || "Non classé"; if (!groups[k]) groups[k] = []; groups[k].push(task); });
+    allTasks.forEach(task => { 
+        const tType = task.type || "Tâche originelle";
+        if (typeFilter !== 'all' && tType !== typeFilter) return;
+        
+        const k = task[currentGrouping] || "Non classé"; 
+        if (!groups[k]) groups[k] = []; 
+        groups[k].push(task); 
+    });
     const keys = Object.keys(groups).sort((a, b) => currentGrouping === 'sprint' ? parseInt(a) - parseInt(b) : a.localeCompare(b));
 
     keys.forEach(key => {
@@ -109,7 +145,7 @@ function renderBacklog() {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><span class="mono" style="color: var(--accent-vivid); font-weight: 700; font-size: 0.8rem;">${task.id}</span></td>
-                <td style="font-weight: 500;">${task.task}</td>
+                <td style="font-weight: 500;">${task.task}<br><span style="font-size: 0.75rem; color: var(--text-secondary);">${task.type || "Tâche originelle"}</span></td>
                 <td><div style="display: flex; gap: 4px; flex-wrap: wrap;">${task.assignees.map(p => `<span class="badge">${p.split(' ')[0]}</span>`).join('')}</div></td>
                 <td style="color: var(--text-secondary); font-size: 0.85rem;"><i class="ph ph-clock"></i> ${task.duration}</td>
                 <td>${task.deps !== '-' ? `<span class="badge" style="background: rgba(255,59,48,0.06); color: var(--danger);">${task.deps}</span>` : '<span style="color: var(--border);">—</span>'}</td>
@@ -129,40 +165,164 @@ function switchView(view, btn) {
 
 function openTaskModal(isEdit = false) {
     document.getElementById('taskModal').classList.add('active');
-    if(!isEdit) { document.getElementById('taskModalTitle').innerText = "Nouvelle Tâche"; document.getElementById('edit-task-old-id').value = ""; ['form-task-id','form-task-name','form-task-assignees','form-task-duration'].forEach(id => document.getElementById(id).value = ""); document.getElementById('form-task-deps').value = "-"; }
+    
+    // Remplir dynamiquement les dépendances
+    const depsContainer = document.getElementById('form-task-deps-container');
+    depsContainer.innerHTML = '';
+    const currentId = document.getElementById('edit-task-old-id').value;
+    allTasks.forEach(t => {
+        if (!isEdit || t.id !== currentId) {
+            const label = document.createElement('label');
+            label.style.display = 'flex';
+            label.style.alignItems = 'center';
+            label.style.gap = '0.5rem';
+            label.style.margin = '0';
+            label.style.cursor = 'pointer';
+            label.style.fontWeight = '500';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'dep-checkbox';
+            checkbox.value = t.id;
+            
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(' ' + t.task));
+            depsContainer.appendChild(label);
+        }
+    });
+
+    if(!isEdit) { 
+        document.getElementById('taskModalTitle').innerText = "Nouvelle Tâche"; 
+        document.getElementById('edit-task-old-id').value = ""; 
+        
+        // Générer ID automatiquement (T- + nombre max + 1)
+        const maxId = Math.max(0, ...allTasks.map(t => parseInt((t.id.match(/\d+/) || [0])[0])));
+        document.getElementById('form-task-id').value = 'T-' + (maxId + 1);
+
+        document.getElementById('form-task-name').value = "";
+        document.getElementById('form-task-type').value = "Tâche originelle";
+        document.getElementById('form-task-duration-val').value = "";
+        document.getElementById('form-task-duration-unit').value = "sem";
+        
+        document.querySelectorAll('.assignee-checkbox').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.dep-checkbox').forEach(cb => cb.checked = false);
+    }
 }
 function closeTaskModal() { document.getElementById('taskModal').classList.remove('active'); }
 
 function editTask(taskId) {
     const task = allTasks.find(t => t.id === taskId); if (!task) return;
-    document.getElementById('taskModalTitle').innerText = "Modifier la tâche";
     document.getElementById('edit-task-old-id').value = task.id;
+    openTaskModal(true);
+    document.getElementById('taskModalTitle').innerText = "Modifier la tâche";
     document.getElementById('form-task-id').value = task.id;
     document.getElementById('form-task-name').value = task.task;
-    document.getElementById('form-task-assignees').value = task.assignees.join(', ');
-    document.getElementById('form-task-duration').value = task.duration;
-    document.getElementById('form-task-deps').value = task.deps;
+    document.getElementById('form-task-type').value = task.type || "Tâche originelle";
+    
+    const durMatch = task.duration ? task.duration.match(/^(\d+(?:\.\d+)?)\s*(.*)$/) : null;
+    if (durMatch) {
+        document.getElementById('form-task-duration-val').value = durMatch[1];
+        document.getElementById('form-task-duration-unit').value = durMatch[2] || "sem";
+    } else {
+        document.getElementById('form-task-duration-val').value = "";
+        document.getElementById('form-task-duration-unit').value = "sem";
+    }
+
     document.getElementById('form-task-sprint').value = task.sprint;
     document.getElementById('form-task-bucket').value = task.bucket;
-    openTaskModal(true);
+
+    document.querySelectorAll('.assignee-checkbox').forEach(cb => {
+        cb.checked = task.assignees.includes(cb.value);
+    });
+
+    const depsArray = (task.deps && task.deps !== '-') ? task.deps.split(',').map(s => s.trim()) : [];
+    document.querySelectorAll('.dep-checkbox').forEach(cb => {
+        cb.checked = depsArray.includes(cb.value);
+    });
 }
 
 function saveTask() {
     const oldId = document.getElementById('edit-task-old-id').value;
     const id = document.getElementById('form-task-id').value;
     const taskName = document.getElementById('form-task-name').value;
-    const assignees = document.getElementById('form-task-assignees').value.split(',').map(s => s.trim()).filter(s => s);
-    const duration = document.getElementById('form-task-duration').value;
-    const deps = document.getElementById('form-task-deps').value;
+    
+    const assignees = Array.from(document.querySelectorAll('.assignee-checkbox:checked')).map(cb => cb.value);
+    
+    const durationVal = document.getElementById('form-task-duration-val').value;
+    const durationUnit = document.getElementById('form-task-duration-unit').value;
+    const duration = durationVal ? `${durationVal} ${durationUnit}` : "";
+    
+    const selectedDeps = Array.from(document.querySelectorAll('.dep-checkbox:checked')).map(cb => cb.value);
+    const deps = selectedDeps.length > 0 ? selectedDeps.join(', ') : '-';
+    
     const sprint = parseInt(document.getElementById('form-task-sprint').value);
     const bucket = document.getElementById('form-task-bucket').value;
-    if(!id || !taskName) return;
-    const data = { id, task: taskName, assignees, duration, deps, sprint, bucket };
-    if(oldId) { const i = allTasks.findIndex(t => t.id === oldId); if (i !== -1) allTasks[i] = data; } else { allTasks.push(data); }
-    renderBacklog(); closeTaskModal();
+    const taskType = document.getElementById('form-task-type').value;
+    const data = { id, task: taskName, assignees, duration, deps, sprint, bucket, type: taskType };
+    
+    // Calcul de la semaine de début en fonction des dépendances
+    let computedStartWeek = (sprint - 1) * 2;
+    if (deps && deps !== '-') {
+        const depIds = deps.split(',').map(s => s.trim());
+        let maxDepEnd = -1;
+        depIds.forEach(depId => {
+            const depTask = allTasks.find(t => t.id === depId);
+            if (depTask) {
+                const start = depTask.start_week || 0;
+                let durWeeks = 1;
+                if (depTask.duration) {
+                    const match = depTask.duration.match(/^(\d+(?:\.\d+)?)\s*(.*)$/);
+                    if (match) {
+                        const val = parseFloat(match[1]);
+                        const unit = match[2];
+                        if (unit.startsWith('j')) durWeeks = val / 5;
+                        else if (unit.startsWith('mois')) durWeeks = val * 4;
+                        else if (unit.startsWith('h')) durWeeks = val / 35;
+                        else durWeeks = val;
+                    }
+                }
+                const end = start + durWeeks;
+                if (end > maxDepEnd) maxDepEnd = end;
+            }
+        });
+        if (maxDepEnd !== -1) {
+            computedStartWeek = Math.ceil(maxDepEnd);
+        }
+    }
+    
+    data.start_week = computedStartWeek;
+
+    if(oldId) { 
+        const i = allTasks.findIndex(t => t.id === oldId); 
+        if (i !== -1) {
+            allTasks[i] = { ...allTasks[i], ...data }; 
+        }
+    } else { 
+        allTasks.push(data); 
+    }
+    
+    fetch('/api/save-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(allTasks)
+    }).then(() => {
+        renderBacklog(); 
+        closeTaskModal();
+    });
 }
 
-function removeTask(taskId) { if(confirm("Supprimer cette tâche ?")) { allTasks = allTasks.filter(t => t.id !== taskId); renderBacklog(); } }
+function removeTask(taskId) { 
+    if(confirm("Supprimer cette tâche ?")) { 
+        allTasks = allTasks.filter(t => t.id !== taskId); 
+        fetch('/api/save-tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(allTasks)
+        }).then(() => {
+            renderBacklog(); 
+        });
+    } 
+}
 
 renderBacklog();
 </script>

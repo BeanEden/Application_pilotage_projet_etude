@@ -10,6 +10,10 @@
         <p class="subtitle">Analyse consolidée des coûts RH et satellites du projet NovaRetail.</p>
     </div>
     <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <div style="background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 2px;">
+            <button class="btn-group" onclick="setBudgetMode('reel', this)" id="btn-budget-reel" style="background: var(--accent); color: white;">Budget Réel</button>
+            <button class="btn-group" onclick="setBudgetMode('client', this)" id="btn-budget-client" style="background: transparent; color: var(--text-secondary);">Budget Client</button>
+        </div>
         <select id="budget-filter-collab" class="form-control" style="width: auto;" onchange="updateCharts()">
             <option value="all">Tous les collaborateurs</option>
             {% for c in collaborators %}<option value="{{ c.name }}">{{ c.name.split(' ')[0] }}</option>{% endfor %}
@@ -34,9 +38,26 @@
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
     <div class="card"><h3>Évolution des Coûts (€)</h3><div style="height: 280px;"><canvas id="chart-cost-evolution"></canvas></div></div>
     <div class="card"><h3>Charge de Travail (Jours-Homme)</h3><div style="height: 280px;"><canvas id="chart-work-evolution"></canvas></div></div>
+</div>
+
+<!-- Detailed Budget Table -->
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0;">Détail Budgétaire par Tâche</h3>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Grouper par :</span>
+            <select id="group-budget" class="form-control" style="width: auto; height: 32px; padding: 0 8px;" onchange="updateCharts()">
+                <option value="bucket">Bucket</option>
+                <option value="sprint">Sprint</option>
+            </select>
+        </div>
+    </div>
+    <div id="budget-table-container">
+        <!-- Injected by JS -->
+    </div>
 </div>
 
 <script>
@@ -44,32 +65,174 @@ Chart.register(ChartDataLabels);
 const tasks = {{ tasks|tojson }};
 const collaborators = {{ collaborators|tojson }};
 const satelliteCosts = {{ satellite_costs|tojson }};
+const categories = {{ categories|tojson }};
 const weeks = ["12/05","19/05","26/05","02/06","09/06","16/06","23/06","30/06","07/07","14/07"];
 let c1,c2,c3,c4;
+let budgetMode = 'reel'; // 'reel' or 'client'
+
+function setBudgetMode(mode, btn) {
+    budgetMode = mode;
+    document.querySelectorAll('#btn-budget-reel, #btn-budget-client').forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-secondary)';
+    });
+    btn.style.background = 'var(--accent)';
+    btn.style.color = 'white';
+    updateCharts();
+}
 
 function updateCharts() {
     const fc = document.getElementById('budget-filter-collab').value;
     const dt = document.getElementById('drilldown-type').value;
+    const groupKey = document.getElementById('group-budget').value;
+    
     document.getElementById('drilldown-title').innerText = dt.charAt(0).toUpperCase()+dt.slice(1)+'s';
+    
     let tRH=0, wRH=Array(weeks.length).fill(0), wWork=Array(weeks.length).fill(0), dd={};
-
-    tasks.forEach(t => {
-        let rh=0; const dDays=t.duration.includes('2 sem')?10:5, dWeeks=t.duration.includes('2 sem')?2:1;
+    
+    // Task-level data for the table
+    const taskDetails = tasks.map(t => {
+        const dDays = t.duration.includes('2 sem') ? 10 : 5;
+        const dWeeks = t.duration.includes('2 sem') ? 2 : 1;
+        let rhCost = 0;
         t.assignees.forEach(n => {
-            if(fc==='all'||n===fc) { const co=collaborators.find(c=>c.name===n); if(co) { const cost=co.tjm_applied*dDays; rh+=cost; for(let i=0;i<dWeeks;i++){const w=t.start_week+i; if(w<weeks.length){wRH[w]+=cost/dWeeks; wWork[w]+=dDays/dWeeks;}} } }
+            const co = collaborators.find(c => c.name === n);
+            if (co) {
+                let dailyRate = 0;
+                if (budgetMode === 'reel') {
+                    // Calcul du coût réel : Salaire chargé / 218 jours ouvrés (standard FR)
+                    dailyRate = (co.salary * (1 + co.charge_rate)) / 218;
+                } else {
+                    // Refacturation client
+                    dailyRate = co.tjm_applied;
+                }
+                const cost = dailyRate * dDays;
+                if (fc === 'all' || n === fc) rhCost += cost;
+            }
         });
-        tRH+=rh; dd[t[dt]]=(dd[t[dt]]||0)+rh;
+        return { ...t, rhCost, dDays, satCosts: {} };
     });
 
-    let tSat=0, wSat=Array(weeks.length).fill(0);
+    // Distribute Satellite Costs
+    let tSat = 0, wSat = Array(weeks.length).fill(0);
     satelliteCosts.forEach(c => {
-        if(fc==='all'||(c.attr_type==='Collaborator'&&c.attr_val===fc)) { tSat+=c.amount; const w=c.attr_type==='Sprint'?Math.min(parseInt(c.attr_val.split(' ')[1])-1,weeks.length-1):0; wSat[w]+=c.amount; if(dt==='bucket'&&c.attr_type==='Bucket') dd[c.attr_val]=(dd[c.attr_val]||0)+c.amount; }
+        let match = false;
+        let amount = budgetMode === 'reel' ? Number(c.amount || 0) : Number(c.rebill_amount || c.amount || 0);
+        
+        if (fc === 'all') match = true;
+        else if (c.attr_type === 'Collaborator') {
+            const list = c.attr_val.split(',').map(n => n.trim());
+            if (list.includes(fc)) { match = true; amount = amount / list.length; }
+        } else if (fc === 'all') match = true; // For global/bucket/sprint, show if no filter
+
+        if (match) {
+            tSat += amount;
+            const w = c.attr_type === 'Sprint' ? Math.min(parseInt(c.attr_val.split(' ')[1]) - 1, weeks.length - 1) : 0;
+            wSat[w] += amount;
+            if (dt === 'bucket' && c.attr_type === 'Bucket') dd[c.attr_val] = (dd[c.attr_val] || 0) + amount;
+
+            // Distribute to tasks for the table
+            let targetTasks = [];
+            if (c.attr_type === 'Global') targetTasks = taskDetails;
+            else if (c.attr_type === 'Sprint') targetTasks = taskDetails.filter(t => `Sprint ${t.sprint}` === c.attr_val);
+            else if (c.attr_type === 'Bucket') targetTasks = taskDetails.filter(t => t.bucket === c.attr_val);
+            else if (c.attr_type === 'Collaborator') {
+                const list = c.attr_val.split(',').map(n => n.trim());
+                targetTasks = taskDetails.filter(t => t.assignees.some(a => list.includes(a)));
+            }
+
+            if (targetTasks.length > 0) {
+                const totalJH = targetTasks.reduce((sum, t) => sum + t.dDays, 0);
+                targetTasks.forEach(t => {
+                    const share = (t.dDays / totalJH) * amount;
+                    t.satCosts[c.cat] = (t.satCosts[c.cat] || 0) + share;
+                });
+            }
+        }
     });
 
-    document.getElementById('stat-total-budget').innerText=(tRH+tSat).toLocaleString()+' €';
-    document.getElementById('stat-rh-budget').innerText=tRH.toLocaleString()+' €';
-    document.getElementById('stat-satellite-budget').innerText=tSat.toLocaleString()+' €';
-    render(tRH,tSat,dd,wRH,wSat,wWork);
+    // Finish Charts Data
+    taskDetails.forEach(t => {
+        tRH += t.rhCost;
+        dd[t[dt]] = (dd[t[dt]] || 0) + t.rhCost;
+        const dWeeks = t.duration.includes('2 sem') ? 2 : 1;
+        for (let i = 0; i < dWeeks; i++) {
+            const w = t.start_week + i;
+            if (w < weeks.length) {
+                wRH[w] += t.rhCost / dWeeks;
+                wWork[w] += t.dDays / dWeeks;
+            }
+        }
+    });
+
+    document.getElementById('stat-total-budget').innerText = (tRH + tSat).toLocaleString() + ' €';
+    document.getElementById('stat-rh-budget').innerText = tRH.toLocaleString() + ' €';
+    document.getElementById('stat-satellite-budget').innerText = tSat.toLocaleString() + ' €';
+    
+    render(tRH, tSat, dd, wRH, wSat, wWork);
+    renderBudgetTable(taskDetails, groupKey);
+}
+
+function renderBudgetTable(taskDetails, groupKey) {
+    const container = document.getElementById('budget-table-container');
+    container.innerHTML = '';
+    
+    const groups = {};
+    taskDetails.forEach(t => {
+        const key = groupKey === 'sprint' ? `Sprint ${t.sprint}` : t.bucket;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(t);
+    });
+
+    Object.keys(groups).sort().forEach(key => {
+        const header = document.createElement('div');
+        header.style.cssText = 'padding: 0.75rem 1.25rem; background: var(--bg-body); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border-light);';
+        header.innerText = key;
+        container.appendChild(header);
+        
+        const table = document.createElement('table');
+        table.style.margin = '0';
+        let headHtml = `<thead><tr><th style="width:60px">ID</th><th>Tâche</th><th style="text-align:right">RH</th>`;
+        categories.forEach(cat => headHtml += `<th style="text-align:right">${cat.substring(0,4)}.</th>`);
+        headHtml += `<th style="text-align:right">TOTAL</th></tr></thead>`;
+        table.innerHTML = headHtml + '<tbody></tbody>';
+        
+        const tbody = table.querySelector('tbody');
+        let gRH=0, gTotal=0, gCats={};
+        
+        groups[key].forEach(t => {
+            let rowTotal = t.rhCost;
+            let catCells = '';
+            categories.forEach(cat => {
+                const val = t.satCosts[cat] || 0;
+                rowTotal += val;
+                gCats[cat] = (gCats[cat] || 0) + val;
+                catCells += `<td style="text-align:right; font-size:0.75rem; color:var(--text-secondary)">${val > 0 ? Math.round(val).toLocaleString() : '-'}</td>`;
+            });
+            gRH += t.rhCost;
+            gTotal += rowTotal;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><span class="mono" style="color:var(--accent); font-weight:700">${t.id}</span></td>
+                <td style="font-size:0.85rem">${t.task}</td>
+                <td style="text-align:right; font-weight:600">${Math.round(t.rhCost).toLocaleString()}</td>
+                ${catCells}
+                <td style="text-align:right; font-weight:800; color:var(--accent)">${Math.round(rowTotal).toLocaleString()} €</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Add Group Footer
+        const tfoot = document.createElement('tfoot');
+        let footHtml = `<tr style="background:var(--bg-body); font-weight:800"><td colspan="2">TOTAL ${key}</td><td style="text-align:right">${Math.round(gRH).toLocaleString()}</td>`;
+        categories.forEach(cat => footHtml += `<td style="text-align:right">${Math.round(gCats[cat]||0).toLocaleString()}</td>`);
+        footHtml += `<td style="text-align:right; color:var(--accent)">${Math.round(gTotal).toLocaleString()} €</td></tr>`;
+        tfoot.innerHTML = footHtml;
+        table.appendChild(tfoot);
+        
+        container.appendChild(table);
+    });
 }
 
 const palette = ['#2d2d6e','#4a4aad','#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff'];
@@ -84,5 +247,5 @@ function render(rh,sat,dd,wrh,wsat,wwork) {
 
 updateCharts();
 </script>
-<style>canvas{max-width:100%;}h3{font-size:0.9rem;margin-bottom:0.75rem;}</style>
+<style>canvas{max-width:100%;}h3{font-size:0.9rem;margin-bottom:0.75rem;} tfoot td { border-top: 2px solid var(--border) !important; }</style>
 {% endblock %}

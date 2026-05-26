@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Journal des Évènements</h1>
+        <p class="subtitle">Suivi des évènements imprévus, modifications de périmètre et ajustements RH au cours du projet.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-secondary" onclick="exportToPDF()"><i class="ph ph-file-pdf"></i> Exporter en PDF</button>
+        <button class="btn btn-primary" onclick="openModal('eventModal')">
+            <i class="ph ph-plus"></i> Nouvel évènement
+        </button>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-label">Coûts Supplémentaires</div>
+        <div class="stat-value text-danger">{{ "{:,.0f}".format(total_costs).replace(',', ' ') }} €</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Économies Réalisées</div>
+        <div class="stat-value text-success">{{ "{:,.0f}".format(total_savings).replace(',', ' ') }} €</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Différentiel Global</div>
+        <div class="stat-value {{ 'text-success' if differential >= 0 else 'text-danger' }}">
+            {{ "+" if differential > 0 else "" }}{{ "{:,.0f}".format(differential).replace(',', ' ') }} €
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Historique des évènements</h2>
+    <div style="overflow-x: auto; margin-top: 1rem;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th style="text-align: right;">Coût (€)</th>
+                    <th style="text-align: right;">Économie (€)</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="eventsTableBody">
+                {% for event in events %}
+                <tr>
+                    <td class="mono" style="font-size: 0.85rem;">{{ event.date }}</td>
+                    <td><span class="badge">{{ event.type }}</span></td>
+                    <td style="max-width: 400px;">{{ event.description }}</td>
+                    <td style="text-align: right;" class="text-danger fw-bold">
+                        {{ "{:,.0f}".format(event.cost).replace(',', ' ') if event.cost > 0 else "-" }}
+                    </td>
+                    <td style="text-align: right;" class="text-success fw-bold">
+                        {{ "{:,.0f}".format(event.saving).replace(',', ' ') if event.saving > 0 else "-" }}
+                    </td>
+                    <td style="text-align: center;">
+                        <i class="ph ph-trash remove-btn" onclick="deleteEvent({{ loop.index0 }})"></i>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not events %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                        Aucun évènement enregistré pour le moment.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal for New Event -->
+<div id="eventModal" class="modal">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2>Ajouter un évènement</h2>
+            <i class="ph ph-x" style="cursor: pointer; font-size: 1.2rem;" onclick="closeModal('eventModal')"></i>
+        </div>
+        
+        <form id="eventForm">
+            <div class="form-group">
+                <label>Date de l'évènement</label>
+                <input type="date" id="eventDate" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Type d'évènement</label>
+                <select id="eventType" class="form-control" required>
+                    {% for type in event_types %}
+                    <option value="{{ type }}">{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="eventDescription" class="form-control" rows="3" placeholder="Détails de l'impact..." required></textarea>
+            </div>
+            
+            <div class="grid-cols-2">
+                <div class="form-group">
+                    <label>Coût supp. (€)</label>
+                    <input type="number" id="eventCost" class="form-control" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Économie (€)</label>
+                    <input type="number" id="eventSaving" class="form-control" value="0" min="0">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Enregistrer</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('eventModal')">Annuler</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const events = {{ events|tojson }};
+
+    function openModal(id) {
+        document.getElementById(id).classList.add('active');
+        // Set default date to today
+        if (id === 'eventModal') {
+            document.getElementById('eventDate').valueAsDate = new Date();
+        }
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    document.getElementById('eventForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const newEvent = {
+            id: Date.now(),
+            date: document.getElementById('eventDate').value,
+            type: document.getElementById('eventType').value,
+            description: document.getElementById('eventDescription').value,
+            cost: parseFloat(document.getElementById('eventCost').value) || 0,
+            saving: parseFloat(document.getElementById('eventSaving').value) || 0
+        };
+        
+        events.push(newEvent);
+        saveEvents();
+    });
+
+    function deleteEvent(index) {
+        if (confirm('Voulez-vous vraiment supprimer cet évènement ?')) {
+            events.splice(index, 1);
+            saveEvents();
+        }
+    }
+
+    function saveEvents() {
+        fetch('/api/save-events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(events)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            }
+        });
+    }
+
+    // Close modal on outside click
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.remove('active');
+        }
+    }
+</script>
+{% endblock %}

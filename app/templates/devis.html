@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+        <h1>Devis Client</h1>
+        <p class="subtitle">Récapitulatif des montants facturés (HT) pour le projet NovaRetail.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" onclick="exportPDF()" style="display: flex; align-items: center; gap: 0.5rem;">
+            <i class="ph ph-printer"></i> Imprimer / PDF
+        </button>
+    </div>
+</div>
+
+<div id="devis-content" style="background: white; padding: 2rem; border-radius: 12px; border: 1px solid var(--border);">
+    
+    <div style="text-align: center; margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 2px solid var(--border-light);">
+        <h2 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Devis Estimatif (HT)</h2>
+        <div style="font-size: 1rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Projet NovaRetail - M2 Big Data</div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;">
+        <div style="text-align: center; padding: 1.5rem; background: var(--bg-body); border-radius: 12px; border: 1px solid var(--border-light);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; margin-bottom: 0.5rem;">Prestations RH (HT)</div>
+            <div id="total-rh" style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">0 €</div>
+        </div>
+        <div style="text-align: center; padding: 1.5rem; background: var(--bg-body); border-radius: 12px; border: 1px solid var(--border-light);">
+            <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; margin-bottom: 0.5rem;">Frais & Satellites (HT)</div>
+            <div id="total-sat" style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary);">0 €</div>
+        </div>
+        <div style="text-align: center; padding: 1.5rem; background: var(--accent-glow); border-radius: 12px; border: 1px solid var(--accent-light);">
+            <div style="font-size: 0.8rem; color: var(--accent); text-transform: uppercase; font-weight: 800; margin-bottom: 0.5rem;">Total Devis (HT)</div>
+            <div id="total-devis" style="font-size: 2rem; font-weight: 900; color: var(--accent);">0 €</div>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;" class="no-print">
+        <h3 style="margin: 0; font-size: 1.1rem;">Détail de la facturation</h3>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Regrouper par :</span>
+            <select id="group-devis" class="form-control" style="width: 150px;" onchange="renderDevis()">
+                <option value="none">Aucun</option>
+                <option value="sprint">Sprint</option>
+                <option value="bucket">Bucket</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="devis-list-container">
+        <!-- Injected by JS -->
+    </div>
+    
+    <div style="margin-top: 4rem; padding-top: 2rem; border-top: 1px dashed var(--border); font-size: 0.85rem; color: var(--text-secondary); text-align: center;">
+        Ce devis est estimatif et non contractuel. Les montants exprimés sont hors taxes (HT).<br>
+        Généré le <span id="current-date-print"></span> depuis NovaRetail Tracker.
+    </div>
+
+</div>
+
+<script>
+const rawTasks = {{ tasks|tojson }};
+const collaborators = {{ collaborators|tojson }};
+const satelliteCosts = {{ satellite_costs|tojson }};
+
+document.getElementById('current-date-print').innerText = new Date().toLocaleDateString('fr-FR');
+
+function getTaskDays(t) {
+    if (!t.duration) return 5;
+    const dStr = String(t.duration);
+    if (dStr.includes('sem')) return (parseInt(dStr) || 1) * 5;
+    if (dStr.includes('j')) return parseInt(dStr) || 5;
+    return 5;
+}
+
+function renderDevis() {
+    const groupKey = document.getElementById('group-devis').value;
+    const container = document.getElementById('devis-list-container');
+    container.innerHTML = '';
+    
+    let globalRh = 0;
+    let globalSat = 0;
+    
+    // Convert costs into a standardized item format
+    let allItems = [];
+    
+    rawTasks.forEach(t => {
+        const days = getTaskDays(t);
+        let taskCost = 0;
+        (t.assignees || []).forEach(name => {
+            const co = collaborators.find(c => c.name === name);
+            if(co) taskCost += (co.tjm_applied || 0) * days;
+        });
+        
+        globalRh += taskCost;
+        
+        allItems.push({
+            type: 'task',
+            id: t.id,
+            label: t.task,
+            sprint: `Sprint ${t.sprint || 1}`,
+            bucket: t.bucket || 'Général',
+            cost: taskCost,
+            qty: `${days} JH`
+        });
+    });
+    
+    satelliteCosts.forEach(c => {
+        const amount = Number(c.rebill_amount || c.amount || 0);
+        globalSat += amount;
+        
+        // Try to guess the sprint or bucket from attr_val if available
+        let sprint = 'Global';
+        let bucket = 'Frais Généraux';
+        
+        if (c.attr_type === 'Sprint') sprint = c.attr_val;
+        if (c.attr_type === 'Bucket') bucket = c.attr_val;
+        
+        allItems.push({
+            type: 'sat',
+            id: c.id ? c.id.slice(-5) : 'SAT',
+            label: c.desc,
+            sprint: sprint,
+            bucket: bucket,
+            cost: amount,
+            qty: `Forfait`
+        });
+    });
+    
+    document.getElementById('total-rh').innerText = Math.round(globalRh).toLocaleString('fr-FR') + ' €';
+    document.getElementById('total-sat').innerText = Math.round(globalSat).toLocaleString('fr-FR') + ' €';
+    document.getElementById('total-devis').innerText = Math.round(globalRh + globalSat).toLocaleString('fr-FR') + ' €';
+
+    if (groupKey === 'none') {
+        container.appendChild(createTable(allItems));
+    } else {
+        const groups = {};
+        allItems.forEach(item => {
+            const key = groupKey === 'sprint' ? item.sprint : item.bucket;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(item);
+        });
+
+        // For sprints, sort correctly Sprint 1, Sprint 2...
+        let sortedKeys = Object.keys(groups);
+        if (groupKey === 'sprint') {
+            sortedKeys.sort((a, b) => {
+                if (a === 'Global') return 1;
+                if (b === 'Global') return -1;
+                return a.localeCompare(b);
+            });
+        } else {
+            sortedKeys.sort();
+        }
+
+        sortedKeys.forEach(key => {
+            const header = document.createElement('div');
+            header.style.cssText = 'padding: 1rem 1.25rem; background: var(--bg-card); font-weight: 800; font-size: 0.9rem; color: var(--accent); border: 1px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0; margin-top: 2rem;';
+            header.innerText = key;
+            container.appendChild(header);
+            
+            const table = createTable(groups[key], true);
+            container.appendChild(table);
+        });
+    }
+}
+
+function createTable(items, isGrouped = false) {
+    let totalSegCost = 0;
+    
+    items.forEach(i => totalSegCost += i.cost);
+
+    const table = document.createElement('table');
+    table.style.margin = '0';
+    if (isGrouped) {
+        table.style.borderTopLeftRadius = '0';
+        table.style.borderTopRightRadius = '0';
+    }
+    
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th style="width: 80px;">Réf.</th>
+                <th>Désignation</th>
+                <th style="width: 120px; text-align: center;">Type</th>
+                <th style="width: 120px; text-align: right;">Qté / Durée</th>
+                <th style="width: 150px; text-align: right;">Montant HT</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+            <tr style="background: var(--bg-body); font-weight: 800;">
+                <td colspan="4" style="text-transform: uppercase; font-size: 0.75rem; color: var(--text-secondary); text-align: right; padding-right: 1.5rem;">Sous-total HT</td>
+                <td style="text-align: right; color: var(--accent); font-size: 1rem;">${Math.round(totalSegCost).toLocaleString('fr-FR')} €</td>
+            </tr>
+        </tfoot>
+    `;
+    
+    const tbody = table.querySelector('tbody');
+    items.forEach(item => {
+        const typeBadge = item.type === 'task' 
+            ? `<span style="background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">Prestation RH</span>`
+            : `<span style="background: #fef08a; color: #a16207; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">Frais/Matériel</span>`;
+            
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><span class="mono" style="color: var(--text-secondary); font-weight:600; font-size: 0.8rem;">${item.id}</span></td>
+            <td style="font-weight: 600; color: var(--text-primary);">${item.label}</td>
+            <td style="text-align: center;">${typeBadge}</td>
+            <td style="text-align: right; font-size: 0.85rem; color: var(--text-secondary);">${item.qty}</td>
+            <td style="text-align: right; font-weight: 800; color: var(--text-primary);">${Number(item.cost).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €</td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    return table;
+}
+
+function exportPDF() {
+    const element = document.getElementById('devis-content');
+    
+    // Hide UI elements not meant for print
+    const noPrintElements = element.querySelectorAll('.no-print');
+    noPrintElements.forEach(el => el.style.display = 'none');
+    
+    const opt = {
+        margin:       10,
+        filename:     'Devis_NovaRetail.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        // Restore UI elements
+        noPrintElements.forEach(el => el.style.display = '');
+    });
+}
+
+// Initial render
+renderDevis();
+</script>
+
+<style>
+@media print {
+    .sidebar, .page-header { display: none !important; }
+    .main-content { margin: 0 !important; padding: 0 !important; }
+    #devis-content { border: none !important; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,389 @@
+[
+    {
+        "category": "Data Engineering",
+        "id": "arch_1",
+        "name": "Architecture Pipeline NovaRetail",
+        "phases": [
+            {
+                "name": "Ingestion",
+                "subcategories": [
+                    {
+                        "name": "",
+                        "steps": [
+                            {
+                                "category": "Ingestion",
+                                "detail": "",
+                                "id": "step_1778231189666",
+                                "image": "/static/uploads/architecture/Logo_outlook.jpg",
+                                "previous_step_id": "",
+                                "previous_step_title": "",
+                                "subcategory": "",
+                                "summary": "Réception des mails avec les bons de commande",
+                                "title": "Réception des mails"
+                            },
+                            {
+                                "category": "Ingestion",
+                                "detail": "",
+                                "id": "step_1779801831128",
+                                "image": "/static/uploads/architecture/power_automate_logo-1.png",
+                                "previous_step_id": "step_1778231189666",
+                                "previous_step_title": "Réception des mails",
+                                "subcategory": "",
+                                "summary": "Récupération des mails via Power Automate et envoi sur le sharepoint",
+                                "title": "Récupération des bons de commandes"
+                            },
+                            {
+                                "category": "Ingestion",
+                                "detail": "",
+                                "id": "step_1",
+                                "images": [
+                                    "/static/uploads/architecture/Microsoft_Office_SharePoint_(2019–2025).svg.png",
+                                    "/static/uploads/architecture/lakehouse.png"
+                                ],
+                                "previous_step_id": "step_1779801831128",
+                                "previous_step_title": "Récupération des bons de commandes",
+                                "subcategory": "",
+                                "summary": "Sauvegarde des .zip sur Sharepoint",
+                                "title": "Sauvegarde des .zip sur Sharepoint"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Extraction",
+                "subcategories": [
+                    {
+                        "name": "Bronze",
+                        "steps": [
+                            {
+                                "category": "Extraction",
+                                "detail": "",
+                                "id": "step_1779802148322",
+                                "images": [
+                                    "/static/uploads/architecture/docling.png",
+                                    "/static/uploads/architecture/pyspark.jpg"
+                                ],
+                                "previous_step_id": "step_1",
+                                "previous_step_title": "Sauvegarde des .zip sur Sharepoint",
+                                "subcategory": "Bronze",
+                                "summary": "Extraction des Zip et avec duckling sauvegarde en bronze dans le lakehouse",
+                                "title": "Extraction des données"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Pipeline",
+                "subcategories": [
+                    {
+                        "name": "",
+                        "steps": [
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779812443662",
+                                "images": [
+                                    "/static/uploads/architecture/bronze_Data.png",
+                                    "/static/uploads/architecture/lakehouse.png"
+                                ],
+                                "previous_step_id": "step_1779802148322",
+                                "previous_step_title": "Extraction des données",
+                                "subcategory": "",
+                                "summary": "Stockage des données brutes dans le lakehouse",
+                                "title": "Bronze"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779812535917",
+                                "image": "/static/uploads/architecture/pyspark.jpg",
+                                "previous_step_id": "step_1779812443662",
+                                "previous_step_title": "Stockage des données brutes",
+                                "subcategory": "",
+                                "summary": "Mise en forme des données via Notebook Fabric Pyspark Bronze to Silver",
+                                "title": "Mise en forme des données"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "Silver\nDonnées transformées\n\nStockées dans Lakehouse\n",
+                                "id": "step_1779812598442",
+                                "images": [
+                                    "/static/uploads/architecture/Silver_Data.png",
+                                    "/static/uploads/architecture/lakehouse.png"
+                                ],
+                                "previous_step_id": "step_1779812535917",
+                                "previous_step_title": "Mise en forme des données",
+                                "subcategory": "",
+                                "summary": "Silver Données transformées  Stockées dans Lakehouse",
+                                "title": "Silver "
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779812639718",
+                                "image": "/static/uploads/architecture/pyspark.jpg",
+                                "previous_step_id": "step_1779812598442",
+                                "previous_step_title": "Silver ",
+                                "subcategory": "",
+                                "summary": "Raffinage des données via Notebook Fabric Pyspark",
+                                "title": "Raffinage des données"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779812700859",
+                                "images": [
+                                    "/static/uploads/architecture/Gold.png",
+                                    "/static/uploads/architecture/lakehouse.png"
+                                ],
+                                "previous_step_id": "step_1779812639718",
+                                "previous_step_title": "Raffinage des données",
+                                "subcategory": "",
+                                "summary": "Données propres, qualifiées et classées",
+                                "title": "Gold"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779814012693",
+                                "images": [
+                                    "/static/uploads/architecture/relation_données.png",
+                                    "/static/uploads/architecture/Dataset.png"
+                                ],
+                                "previous_step_id": "step_1779812700859",
+                                "previous_step_title": "Gold",
+                                "subcategory": "",
+                                "summary": "Modèle sémantique PowerBI  Schéma en étoile",
+                                "title": "Mise en relation des données"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Présentation",
+                "subcategories": [
+                    {
+                        "name": "",
+                        "steps": [
+                            {
+                                "category": "Présentation",
+                                "detail": "",
+                                "id": "step_2",
+                                "image": "/static/uploads/architecture/PowerBI.jpg",
+                                "previous_step_id": "step_1779814012693",
+                                "previous_step_title": "Mise en relation des données",
+                                "subcategory": "",
+                                "summary": "Rapport PoweBI",
+                                "title": "Visualisation et présentation"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "steps": [
+            {
+                "category": "Ingestion",
+                "detail": "",
+                "id": "step_1778231189666",
+                "image": "/static/uploads/architecture/Logo_outlook.jpg",
+                "previous_step_id": "",
+                "previous_step_title": "",
+                "subcategory": "",
+                "summary": "Réception des mails avec les bons de commande",
+                "title": "Réception des mails"
+            },
+            {
+                "category": "Ingestion",
+                "detail": "",
+                "id": "step_1779801831128",
+                "image": "/static/uploads/architecture/power_automate_logo-1.png",
+                "previous_step_id": "step_1778231189666",
+                "previous_step_title": "Réception des mails",
+                "subcategory": "",
+                "summary": "Récupération des mails via Power Automate et envoi sur le sharepoint",
+                "title": "Récupération des bons de commandes"
+            },
+            {
+                "category": "Ingestion",
+                "detail": "",
+                "id": "step_1",
+                "images": [
+                    "/static/uploads/architecture/Microsoft_Office_SharePoint_(2019–2025).svg.png",
+                    "/static/uploads/architecture/lakehouse.png"
+                ],
+                "previous_step_id": "step_1779801831128",
+                "previous_step_title": "Récupération des bons de commandes",
+                "subcategory": "",
+                "summary": "Sauvegarde des .zip sur Sharepoint",
+                "title": "Sauvegarde des .zip sur Sharepoint"
+            },
+            {
+                "category": "Extraction",
+                "detail": "",
+                "id": "step_1779802148322",
+                "images": [
+                    "/static/uploads/architecture/docling.png",
+                    "/static/uploads/architecture/pyspark.jpg"
+                ],
+                "previous_step_id": "step_1",
+                "previous_step_title": "Sauvegarde des .zip sur Sharepoint",
+                "subcategory": "Bronze",
+                "summary": "Extraction des Zip et avec duckling sauvegarde en bronze dans le lakehouse",
+                "title": "Extraction des données"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779812443662",
+                "images": [
+                    "/static/uploads/architecture/bronze_Data.png",
+                    "/static/uploads/architecture/lakehouse.png"
+                ],
+                "previous_step_id": "step_1779802148322",
+                "previous_step_title": "Extraction des données",
+                "subcategory": "",
+                "summary": "Stockage des données brutes dans le lakehouse",
+                "title": "Bronze"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779812535917",
+                "image": "/static/uploads/architecture/pyspark.jpg",
+                "previous_step_id": "step_1779812443662",
+                "previous_step_title": "Stockage des données brutes",
+                "subcategory": "",
+                "summary": "Mise en forme des données via Notebook Fabric Pyspark Bronze to Silver",
+                "title": "Mise en forme des données"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "Silver\nDonnées transformées\n\nStockées dans Lakehouse\n",
+                "id": "step_1779812598442",
+                "images": [
+                    "/static/uploads/architecture/Silver_Data.png",
+                    "/static/uploads/architecture/lakehouse.png"
+                ],
+                "previous_step_id": "step_1779812535917",
+                "previous_step_title": "Mise en forme des données",
+                "subcategory": "",
+                "summary": "Silver Données transformées  Stockées dans Lakehouse",
+                "title": "Silver "
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779812639718",
+                "image": "/static/uploads/architecture/pyspark.jpg",
+                "previous_step_id": "step_1779812598442",
+                "previous_step_title": "Silver ",
+                "subcategory": "",
+                "summary": "Raffinage des données via Notebook Fabric Pyspark",
+                "title": "Raffinage des données"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779812700859",
+                "images": [
+                    "/static/uploads/architecture/Gold.png",
+                    "/static/uploads/architecture/lakehouse.png"
+                ],
+                "previous_step_id": "step_1779812639718",
+                "previous_step_title": "Raffinage des données",
+                "subcategory": "",
+                "summary": "Données propres, qualifiées et classées",
+                "title": "Gold"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779814012693",
+                "images": [
+                    "/static/uploads/architecture/relation_données.png",
+                    "/static/uploads/architecture/Dataset.png"
+                ],
+                "previous_step_id": "step_1779812700859",
+                "previous_step_title": "Gold",
+                "subcategory": "",
+                "summary": "Modèle sémantique PowerBI  Schéma en étoile",
+                "title": "Mise en relation des données"
+            },
+            {
+                "category": "Présentation",
+                "detail": "",
+                "id": "step_2",
+                "image": "/static/uploads/architecture/PowerBI.jpg",
+                "previous_step_id": "step_1779814012693",
+                "previous_step_title": "Mise en relation des données",
+                "subcategory": "",
+                "summary": "Rapport PoweBI",
+                "title": "Visualisation et présentation"
+            }
+        ],
+        "subcategory": "Pipeline Médaillon"
+    },
+    {
+        "category": "Data pipeline",
+        "id": "arch_1779815270755",
+        "name": "Architecture Open Source",
+        "phases": [
+            {
+                "name": "Ingestion",
+                "subcategories": [
+                    {
+                        "name": "",
+                        "steps": [
+                            {
+                                "category": "Ingestion",
+                                "detail": "",
+                                "id": "step_1779815331491",
+                                "images": [
+                                    "/static/uploads/architecture/Logo_outlook.jpg"
+                                ],
+                                "previous_step_id": "",
+                                "previous_step_title": "",
+                                "subcategory": "",
+                                "summary": "Réception des mails avec les bons de commande",
+                                "title": "Réception des mails"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "steps": [
+            {
+                "category": "Ingestion",
+                "detail": "",
+                "id": "step_1779815331491",
+                "images": [
+                    "/static/uploads/architecture/Logo_outlook.jpg"
+                ],
+                "previous_step_id": "",
+                "previous_step_title": "",
+                "subcategory": "",
+                "summary": "Réception des mails avec les bons de commande",
+                "title": "Réception des mails"
+            },
+            {
+                "id": "step_1779815401291",
+                "title": "Récupération des bons de commandes",
+                "category": "Ingestion",
+                "subcategory": "",
+                "summary": "Récupération des Pj des mails via n8n",
+                "detail": "",
+                "images": [
+                    "/static/uploads/architecture/n8n.png"
+                ],
+                "previous_step_id": "",
+                "previous_step_title": ""
+            }
+        ],
+        "subcategory": ""
+    }
+]

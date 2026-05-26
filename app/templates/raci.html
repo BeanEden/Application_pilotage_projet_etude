@@ -66,17 +66,7 @@
 </div>
 
 <script>
-let raciTasks = [
-    {% for task in tasks %}
-    {
-        id: "{{ task.id }}",
-        task: "{{ task.task }}",
-        sprint: {{ task.sprint }},
-        bucket: "{{ task.bucket }}",
-        raci: {{ task.raci|tojson }}
-    },
-    {% endfor %}
-];
+let raciTasks = {{ tasks|tojson|safe }};
 
 let currentRaciGrouping = 'sprint';
 
@@ -135,14 +125,15 @@ function renderRaci() {
         groups[key].forEach(t => {
             const row = document.createElement('tr');
             row.id = `row-raci-${t.id}`;
+            const r = t.raci || {};
             row.innerHTML = `
                 <td style="text-align: left; font-weight: 600;">
                     <span class="mono text-accent" style="margin-right: 8px; font-size: 0.8rem;">${t.id}</span>
                     <span class="task-name">${t.task}</span>
                 </td>
-                <td>${createBadgeHtml(t.id, 'jc', t.raci.jc || 'I')}</td>
-                <td>${createBadgeHtml(t.id, 'cl', t.raci.cl || 'I')}</td>
-                <td>${createBadgeHtml(t.id, 'lu', t.raci.lu || 'I')}</td>
+                <td>${createBadgeHtml(t.id, 'jc', r.jc || 'I')}</td>
+                <td>${createBadgeHtml(t.id, 'cl', r.cl || 'I')}</td>
+                <td>${createBadgeHtml(t.id, 'lu', r.lu || 'I')}</td>
             `;
             tbody.appendChild(row);
         });
@@ -189,10 +180,17 @@ function saveRaci() {
     const newVal = document.getElementById('form-raci-val').value;
     
     const task = raciTasks.find(t => t.id === taskId);
+    if (!task.raci) task.raci = {};
     task.raci[personCode] = newVal;
     
     renderRaci();
     closeRaciModal();
+
+    fetch('/api/save-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(raciTasks)
+    });
 }
 
 renderRaci();
