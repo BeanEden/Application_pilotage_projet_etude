@@ -102,6 +102,12 @@ def save_export_configs():
     save_json('export_configs.json', data)
     return jsonify({"status": "success"})
 
+@main.route('/api/save-project-info', methods=['POST'])
+def save_project_info():
+    data = request.json
+    save_json('project_info.json', data)
+    return jsonify({"status": "success"})
+
 @main.route('/api/upload-image', methods=['POST'])
 def upload_image():
     if 'file' not in request.files:
@@ -124,11 +130,15 @@ def index():
 
 @main.route('/cadrage/contexte')
 def contexte():
-    return render_template('context.html', title="Contexte & Objectifs")
+    info = load_json('project_info.json')
+    if not info: info = {}
+    return render_template('context.html', title="Contexte & Objectifs", info=info)
 
 @main.route('/cadrage/perimetre')
 def perimetre():
-    return render_template('scope.html', title="Périmètre & Livrables")
+    info = load_json('project_info.json')
+    if not info: info = {}
+    return render_template('scope.html', title="Périmètre & Livrables", info=info)
 
 @main.route('/cadrage/parties-prenantes')
 def parties_prenantes():

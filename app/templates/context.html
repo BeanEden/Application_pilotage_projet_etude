@@ -1,19 +1,28 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
     <div>
         <h1>Contexte & Objectifs</h1>
         <p class="subtitle">Définition de la vision stratégique et des enjeux du projet NovaRetail.</p>
     </div>
+    <button class="btn btn-primary" onclick="saveContextInfo()"><i class="ph ph-floppy-disk"></i> Enregistrer</button>
 </div>
 
-<div class="card">
-    <h2><i class="ph ph-warning-diamond" style="color: var(--warning);"></i> &nbsp;Le Problème</h2>
-    <p>L'entreprise Novaretail rencontre le problème de fiabilisation des bons de commande, entraînant de multiples
-        erreurs coûteuses.</p>
-    <p>L'objectif est de développer un outil automatique de lecture des bons pour réduire les erreurs et suivre
-        l'activité en temps réel.</p>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card" style="margin: 0;">
+        <h2><i class="ph ph-warning-diamond" style="color: var(--warning);"></i> &nbsp;Le Problème</h2>
+        <div id="context_problem" class="editable-area" contenteditable="true" style="outline: none; min-height: 80px; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;">
+            {{ info.get('context_problem', "Le problème n'est pas encore défini.")|safe }}
+        </div>
+    </div>
+    
+    <div class="card" style="margin: 0;">
+        <h2><i class="ph ph-lightbulb" style="color: var(--teal);"></i> &nbsp;La Solution</h2>
+        <div id="context_solution" class="editable-area" contenteditable="true" style="outline: none; min-height: 80px; padding: 0.5rem; border-radius: 4px; transition: background 0.2s;">
+            {{ info.get('context_solution', "La solution n'est pas encore définie.")|safe }}
+        </div>
+    </div>
 </div>
 
 <div class="card">
@@ -22,20 +31,17 @@
         <div
             style="padding: 1.25rem; background: var(--bg-body); border-left: 4px solid var(--accent-vivid); border-radius: 8px;">
             <h4 style="color: var(--accent); font-size: 0.9rem; margin-bottom: 0.4rem;">Pipeline Médaillon</h4>
-            <p style="font-size: 0.85rem;">Mise en place d'une architecture Bronze / Silver / Gold sur Microsoft Fabric.
-            </p>
+            <div id="context_obj_medallion" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_medallion', "Mise en place d'une architecture Bronze / Silver / Gold sur Microsoft Fabric.")|safe }}</div>
         </div>
         <div
             style="padding: 1.25rem; background: var(--bg-body); border-left: 4px solid var(--purple); border-radius: 8px;">
             <h4 style="color: var(--purple); font-size: 0.9rem; margin-bottom: 0.4rem;">Automatisation Docling</h4>
-            <p style="font-size: 0.85rem;">Utilisation de Docling pour extraire les données des rapports .docx
-                automatiquement.</p>
+            <div id="context_obj_docling" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_docling', "Utilisation de Docling pour extraire les données des rapports .docx automatiquement.")|safe }}</div>
         </div>
         <div
             style="padding: 1.25rem; background: var(--bg-body); border-left: 4px solid var(--teal); border-radius: 8px;">
             <h4 style="color: var(--teal); font-size: 0.9rem; margin-bottom: 0.4rem;">Visualisation Power BI</h4>
-            <p style="font-size: 0.85rem;">Dashboards interactifs avec connexion DirectLake pour des analyses en temps
-                réel.</p>
+            <div id="context_obj_powerbi" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_powerbi', "Dashboards interactifs avec connexion DirectLake pour des analyses en temps réel.")|safe }}</div>
         </div>
         <div
             style="padding: 1.25rem; background: var(--bg-body); border-left: 4px solid var(--green); border-radius: 8px;">
@@ -44,4 +50,33 @@
         </div>
     </div>
 </div>
+
+<style>
+.editable-area:hover, .editable-area:focus {
+    background: rgba(255,255,255,0.5);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+</style>
+
+<script>
+const projectInfo = {{ info|tojson }};
+
+function saveContextInfo() {
+    projectInfo.context_problem = document.getElementById('context_problem').innerHTML.trim();
+    projectInfo.context_solution = document.getElementById('context_solution').innerHTML.trim();
+    projectInfo.context_obj_medallion = document.getElementById('context_obj_medallion').innerHTML.trim();
+    projectInfo.context_obj_docling = document.getElementById('context_obj_docling').innerHTML.trim();
+    projectInfo.context_obj_powerbi = document.getElementById('context_obj_powerbi').innerHTML.trim();
+    
+    fetch('/api/save-project-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectInfo)
+    }).then(res => res.json()).then(data => {
+        if(data.status === 'success') {
+            alert("Informations de contexte enregistrées avec succès !");
+        }
+    });
+}
+</script>
 {% endblock %}

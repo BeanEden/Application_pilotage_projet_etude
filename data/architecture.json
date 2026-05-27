@@ -178,6 +178,19 @@
                                 "subcategory": "",
                                 "summary": "Rapport PoweBI",
                                 "title": "Visualisation et présentation"
+                            },
+                            {
+                                "category": "Présentation",
+                                "detail": "",
+                                "id": "step_1779874530399",
+                                "images": [
+                                    "/static/uploads/architecture/lecture_par_IA.png"
+                                ],
+                                "previous_step_id": "step_2",
+                                "previous_step_title": "Visualisation et présentation",
+                                "subcategory": "",
+                                "summary": "Intégration d'un MCP PowerBI",
+                                "title": "Intégration MCP Power BI"
                             }
                         ]
                     }
@@ -323,6 +336,19 @@
                 "subcategory": "",
                 "summary": "Rapport PoweBI",
                 "title": "Visualisation et présentation"
+            },
+            {
+                "category": "Présentation",
+                "detail": "",
+                "id": "step_1779874530399",
+                "images": [
+                    "/static/uploads/architecture/lecture_par_IA.png"
+                ],
+                "previous_step_id": "step_2",
+                "previous_step_title": "Visualisation et présentation",
+                "subcategory": "",
+                "summary": "Intégration d'un MCP PowerBI",
+                "title": "Intégration MCP Power BI"
             }
         ],
         "subcategory": "Pipeline Médaillon"
@@ -343,7 +369,7 @@
                                 "detail": "",
                                 "id": "step_1779815331491",
                                 "images": [
-                                    "/static/uploads/architecture/Logo_outlook.jpg"
+                                    "/static/uploads/architecture/gmail.png"
                                 ],
                                 "previous_step_id": "",
                                 "previous_step_title": "",
@@ -363,6 +389,158 @@
                                 "subcategory": "",
                                 "summary": "Récupération des Pj des mails via n8n",
                                 "title": "Récupération des bons de commandes"
+                            },
+                            {
+                                "category": "Ingestion",
+                                "detail": "",
+                                "id": "step_1779874577190",
+                                "images": [
+                                    "/static/uploads/architecture/Minio.png"
+                                ],
+                                "previous_step_id": "step_1779815401291",
+                                "previous_step_title": "Récupération des bons de commandes",
+                                "subcategory": "",
+                                "summary": "Sauvegarde des .zip sur Minio",
+                                "title": "Sauvegarde des .zip sur Minio"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Extraction",
+                "subcategories": [
+                    {
+                        "name": "",
+                        "steps": [
+                            {
+                                "category": "Extraction",
+                                "detail": "",
+                                "id": "step_1779874969657",
+                                "images": [
+                                    "/static/uploads/architecture/docling.png",
+                                    "/static/uploads/architecture/python.png"
+                                ],
+                                "previous_step_id": "step_1779874577190",
+                                "previous_step_title": "Sauvegarde des .zip sur Minio",
+                                "subcategory": "",
+                                "summary": "Extraction des données avec Docling",
+                                "title": "Extraction des données"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Pipeline",
+                "subcategories": [
+                    {
+                        "name": "",
+                        "steps": [
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779875003730",
+                                "images": [
+                                    "/static/uploads/architecture/bronze_Data.png",
+                                    "/static/uploads/architecture/Minio.png"
+                                ],
+                                "previous_step_id": "step_1779874969657",
+                                "previous_step_title": "Extraction des données",
+                                "subcategory": "",
+                                "summary": "Bronze sur Minio",
+                                "title": "Bronze"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779875040303",
+                                "images": [
+                                    "/static/uploads/architecture/python.png"
+                                ],
+                                "previous_step_id": "step_1779875003730",
+                                "previous_step_title": "Bronze",
+                                "subcategory": "",
+                                "summary": "Mise en forme des données avec python",
+                                "title": "Mise en forme des données"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779875068477",
+                                "images": [
+                                    "/static/uploads/architecture/Minio.png",
+                                    "/static/uploads/architecture/Silver_Data.png"
+                                ],
+                                "previous_step_id": "step_1779875040303",
+                                "previous_step_title": "Mise en forme des données",
+                                "subcategory": "",
+                                "summary": "Silver sur Minio",
+                                "title": "Silver"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779875096001",
+                                "images": [
+                                    "/static/uploads/architecture/python.png"
+                                ],
+                                "previous_step_id": "step_1779875068477",
+                                "previous_step_title": "Silver",
+                                "subcategory": "",
+                                "summary": "Raffinage des données",
+                                "title": "Raffinage des données"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779875119125",
+                                "images": [
+                                    "/static/uploads/architecture/Gold.png",
+                                    "/static/uploads/architecture/Minio.png"
+                                ],
+                                "previous_step_id": "step_1779875096001",
+                                "previous_step_title": "Raffinage des données",
+                                "subcategory": "",
+                                "summary": "Données propres, qualifiées et classées",
+                                "title": "Gold"
+                            },
+                            {
+                                "category": "Pipeline",
+                                "detail": "",
+                                "id": "step_1779875185928",
+                                "images": [
+                                    "/static/uploads/architecture/relation_données.png",
+                                    "/static/uploads/architecture/superset.png"
+                                ],
+                                "previous_step_id": "step_1779875119125",
+                                "previous_step_title": "Gold",
+                                "subcategory": "",
+                                "summary": "Mise en relation des données superset",
+                                "title": "Mise en relation des données"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "Présentation",
+                "subcategories": [
+                    {
+                        "name": "",
+                        "steps": [
+                            {
+                                "category": "Présentation",
+                                "detail": "",
+                                "id": "step_1779875207580",
+                                "images": [
+                                    "/static/uploads/architecture/streamlit.png"
+                                ],
+                                "previous_step_id": "step_1779875185928",
+                                "previous_step_title": "Mise en relation des données",
+                                "subcategory": "",
+                                "summary": "Visualisation et présentation",
+                                "title": "Visualisation et présentation"
                             }
                         ]
                     }
@@ -371,17 +549,17 @@
         ],
         "steps": [
             {
-                "id": "step_1779815331491",
-                "title": "Réception des mails",
                 "category": "Ingestion",
-                "subcategory": "",
-                "summary": "Réception des mails avec les bons de commande",
                 "detail": "",
+                "id": "step_1779815331491",
                 "images": [
                     "/static/uploads/architecture/gmail.png"
                 ],
                 "previous_step_id": "",
-                "previous_step_title": ""
+                "previous_step_title": "",
+                "subcategory": "",
+                "summary": "Réception des mails avec les bons de commande",
+                "title": "Réception des mails"
             },
             {
                 "category": "Ingestion",
@@ -395,6 +573,141 @@
                 "subcategory": "",
                 "summary": "Récupération des Pj des mails via n8n",
                 "title": "Récupération des bons de commandes"
+            },
+            {
+                "category": "Ingestion",
+                "detail": "",
+                "id": "step_1779874577190",
+                "images": [
+                    "/static/uploads/architecture/Minio.png"
+                ],
+                "previous_step_id": "step_1779815401291",
+                "previous_step_title": "Récupération des bons de commandes",
+                "subcategory": "",
+                "summary": "Sauvegarde des .zip sur Minio",
+                "title": "Sauvegarde des .zip sur Minio"
+            },
+            {
+                "category": "Extraction",
+                "detail": "",
+                "id": "step_1779874969657",
+                "images": [
+                    "/static/uploads/architecture/docling.png",
+                    "/static/uploads/architecture/python.png"
+                ],
+                "previous_step_id": "step_1779874577190",
+                "previous_step_title": "Sauvegarde des .zip sur Minio",
+                "subcategory": "",
+                "summary": "Extraction des données avec Docling",
+                "title": "Extraction des données"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779875003730",
+                "images": [
+                    "/static/uploads/architecture/bronze_Data.png",
+                    "/static/uploads/architecture/Minio.png"
+                ],
+                "previous_step_id": "step_1779874969657",
+                "previous_step_title": "Extraction des données",
+                "subcategory": "",
+                "summary": "Bronze sur Minio",
+                "title": "Bronze"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779875040303",
+                "images": [
+                    "/static/uploads/architecture/python.png"
+                ],
+                "previous_step_id": "step_1779875003730",
+                "previous_step_title": "Bronze",
+                "subcategory": "",
+                "summary": "Mise en forme des données avec python",
+                "title": "Mise en forme des données"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779875068477",
+                "images": [
+                    "/static/uploads/architecture/Minio.png",
+                    "/static/uploads/architecture/Silver_Data.png"
+                ],
+                "previous_step_id": "step_1779875040303",
+                "previous_step_title": "Mise en forme des données",
+                "subcategory": "",
+                "summary": "Silver sur Minio",
+                "title": "Silver"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779875096001",
+                "images": [
+                    "/static/uploads/architecture/python.png"
+                ],
+                "previous_step_id": "step_1779875068477",
+                "previous_step_title": "Silver",
+                "subcategory": "",
+                "summary": "Raffinage des données",
+                "title": "Raffinage des données"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779875119125",
+                "images": [
+                    "/static/uploads/architecture/Gold.png",
+                    "/static/uploads/architecture/Minio.png"
+                ],
+                "previous_step_id": "step_1779875096001",
+                "previous_step_title": "Raffinage des données",
+                "subcategory": "",
+                "summary": "Données propres, qualifiées et classées",
+                "title": "Gold"
+            },
+            {
+                "category": "Pipeline",
+                "detail": "",
+                "id": "step_1779875185928",
+                "images": [
+                    "/static/uploads/architecture/relation_données.png",
+                    "/static/uploads/architecture/superset.png"
+                ],
+                "previous_step_id": "step_1779875119125",
+                "previous_step_title": "Gold",
+                "subcategory": "",
+                "summary": "Mise en relation des données superset",
+                "title": "Mise en relation des données"
+            },
+            {
+                "category": "Présentation",
+                "detail": "",
+                "id": "step_1779875207580",
+                "images": [
+                    "/static/uploads/architecture/streamlit.png"
+                ],
+                "previous_step_id": "step_1779875185928",
+                "previous_step_title": "Mise en relation des données",
+                "subcategory": "",
+                "summary": "Visualisation et présentation",
+                "title": "Visualisation et présentation"
+            },
+            {
+                "id": "step_1779875229525",
+                "title": "Intégration d'un MCP",
+                "category": "Présentation",
+                "subcategory": "",
+                "summary": "Intégration d'un MCP",
+                "detail": "",
+                "images": [
+                    "/static/uploads/architecture/lecture_par_IA.png"
+                ],
+                "previous_step_id": "step_1779875207580",
+                "previous_step_title": "Visualisation et présentation"
             }
         ],
         "subcategory": ""

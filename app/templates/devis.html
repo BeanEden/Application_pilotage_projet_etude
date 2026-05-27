@@ -40,9 +40,9 @@
         <div style="display: flex; align-items: center; gap: 0.75rem;">
             <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Regrouper par :</span>
             <select id="group-devis" class="form-control" style="width: 150px;" onchange="renderDevis()">
-                <option value="none">Aucun</option>
-                <option value="sprint">Sprint</option>
+                <option value="sprint" selected>Sprint</option>
                 <option value="bucket">Bucket</option>
+                <option value="none">Type de coût</option>
             </select>
         </div>
     </div>
@@ -141,7 +141,6 @@ function renderDevis() {
             groups[key].push(item);
         });
 
-        // For sprints, sort correctly Sprint 1, Sprint 2...
         let sortedKeys = Object.keys(groups);
         if (groupKey === 'sprint') {
             sortedKeys.sort((a, b) => {
@@ -167,7 +166,6 @@ function renderDevis() {
 
 function createTable(items, isGrouped = false) {
     let totalSegCost = 0;
-    
     items.forEach(i => totalSegCost += i.cost);
 
     const table = document.createElement('table');
@@ -180,17 +178,14 @@ function createTable(items, isGrouped = false) {
     table.innerHTML = `
         <thead>
             <tr>
-                <th style="width: 80px;">Réf.</th>
-                <th>Désignation</th>
-                <th style="width: 120px; text-align: center;">Type</th>
-                <th style="width: 120px; text-align: right;">Qté / Durée</th>
-                <th style="width: 150px; text-align: right;">Montant HT</th>
+                <th>Désignation de la tâche / prestation</th>
+                <th style="width: 150px; text-align: right;">Qté / Durée</th>
             </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
             <tr style="background: var(--bg-body); font-weight: 800;">
-                <td colspan="4" style="text-transform: uppercase; font-size: 0.75rem; color: var(--text-secondary); text-align: right; padding-right: 1.5rem;">Sous-total HT</td>
+                <td style="text-transform: uppercase; font-size: 0.75rem; color: var(--text-secondary); text-align: right; padding-right: 1.5rem;">Sous-total HT</td>
                 <td style="text-align: right; color: var(--accent); font-size: 1rem;">${Math.round(totalSegCost).toLocaleString('fr-FR')} €</td>
             </tr>
         </tfoot>
@@ -198,17 +193,10 @@ function createTable(items, isGrouped = false) {
     
     const tbody = table.querySelector('tbody');
     items.forEach(item => {
-        const typeBadge = item.type === 'task' 
-            ? `<span style="background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">Prestation RH</span>`
-            : `<span style="background: #fef08a; color: #a16207; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 700;">Frais/Matériel</span>`;
-            
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td><span class="mono" style="color: var(--text-secondary); font-weight:600; font-size: 0.8rem;">${item.id}</span></td>
-            <td style="font-weight: 600; color: var(--text-primary);">${item.label}</td>
-            <td style="text-align: center;">${typeBadge}</td>
-            <td style="text-align: right; font-size: 0.85rem; color: var(--text-secondary);">${item.qty}</td>
-            <td style="text-align: right; font-weight: 800; color: var(--text-primary);">${Number(item.cost).toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2})} €</td>
+            <td style="font-weight: 500; color: var(--text-primary); font-size: 0.95rem; padding: 1rem 1.25rem;">${item.label}</td>
+            <td style="text-align: right; font-weight: 700; color: var(--text-secondary); font-size: 0.95rem; padding: 1rem 1.25rem;">${item.qty}</td>
         `;
         tbody.appendChild(row);
     });
