@@ -32,6 +32,14 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div class="card" style="margin-bottom: 2rem;">
+    <h2>Évolution Financière</h2>
+    <div style="position: relative; height: 300px; width: 100%;">
+        <canvas id="eventsChart"></canvas>
+    </div>
+</div>
+
 <div class="card">
     <h2>Historique des évènements</h2>
     <div style="overflow-x: auto; margin-top: 1rem;">
@@ -203,5 +211,103 @@
             event.target.classList.remove('active');
         }
     }
+
+    function renderChart() {
+        if (events.length === 0) return;
+
+        let aggregated = {};
+        events.forEach(e => {
+            let d = e.date || "Inconnue";
+            if(!aggregated[d]) {
+                aggregated[d] = { cost: 0, saving: 0 };
+            }
+            aggregated[d].cost += (e.cost || 0);
+            aggregated[d].saving += (e.saving || 0);
+        });
+
+        let sortedDates = Object.keys(aggregated).sort();
+        
+        let labels = [];
+        let costsData = [];
+        let savingsData = [];
+        let cumulativeData = [];
+        let currentCumul = 0;
+
+        sortedDates.forEach(d => {
+            labels.push(d);
+            let c = aggregated[d].cost;
+            let s = aggregated[d].saving;
+            costsData.push(-c);
+            savingsData.push(s);
+            currentCumul += (s - c);
+            cumulativeData.push(currentCumul);
+        });
+
+        const ctx = document.getElementById('eventsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Dépenses',
+                        data: costsData,
+                        backgroundColor: 'rgba(255, 59, 48, 0.7)',
+                        borderColor: 'rgba(255, 59, 48, 1)',
+                        borderWidth: 1,
+                        order: 2
+                    },
+                    {
+                        label: 'Économies',
+                        data: savingsData,
+                        backgroundColor: 'rgba(52, 199, 89, 0.7)',
+                        borderColor: 'rgba(52, 199, 89, 1)',
+                        borderWidth: 1,
+                        order: 2
+                    },
+                    {
+                        label: 'Évolution',
+                        data: cumulativeData,
+                        borderColor: 'var(--accent)',
+                        backgroundColor: 'var(--accent)',
+                        borderWidth: 2,
+                        type: 'line',
+                        tension: 0.2,
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        grid: { 
+                            color: function(context) {
+                                if (context.tick.value === 0) return 'rgba(0,0,0,0.4)';
+                                return 'rgba(0,0,0,0.05)';
+                            },
+                            lineWidth: function(context) {
+                                if (context.tick.value === 0) return 2;
+                                return 1;
+                            }
+                        },
+                        ticks: { callback: function(value) { return value + ' €'; } }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.raw + ' €';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    setTimeout(renderChart, 100);
 </script>
 {% endblock %}

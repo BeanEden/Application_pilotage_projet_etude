@@ -126,7 +126,16 @@ def upload_image():
 
 @main.route('/')
 def index():
-    return render_template('index.html', title="Dashboard NovaRetail")
+    tasks = load_json('tasks.json')
+    collaborators = get_collaborators()
+    events = load_json('events.json')
+    costs = load_json('costs.json')
+    project_total = get_project_total()
+    weeks = ["12/05", "19/05", "26/05", "02/06", "09/06", "16/06", "23/06", "30/06", "07/07", "14/07"]
+    return render_template('index.html', title="Dashboard NovaRetail", 
+                           tasks=tasks, collaborators=collaborators, 
+                           events=events, costs=costs, 
+                           project_total=project_total, weeks=weeks)
 
 @main.route('/cadrage/contexte')
 def contexte():

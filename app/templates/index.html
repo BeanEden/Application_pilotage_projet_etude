@@ -8,58 +8,191 @@
     </div>
 </div>
 
+<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+    <span style="font-weight: 700; color: var(--text-secondary); white-space: nowrap;">Simuler la date :</span>
+    <input type="range" id="date-slider" min="0" max="{{ weeks|length - 1 }}" value="0" style="flex: 1;" oninput="updateDashboard(this.value)">
+    <span id="date-display" style="font-weight: 800; color: var(--accent); min-width: 140px; text-align: right;">Semaine du 12/05</span>
+</div>
+
 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2rem;">
     <div class="stat-card">
-        <div class="stat-label">Tâches</div>
-        <div class="stat-value">14</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Sprints</div>
-        <div class="stat-value">4</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Collaborateurs</div>
-        <div class="stat-value">3</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Semaines</div>
-        <div class="stat-value">10</div>
-    </div>
-</div>
-
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
-    <div class="card">
-        <h2>État d'avancement global</h2>
-        <div style="height: 10px; background: var(--border-light); border-radius: 99px; margin: 1.25rem 0 0.75rem;">
-            <div
-                style="width: 30%; height: 100%; background: var(--accent-vivid); border-radius: 99px; transition: width 0.5s ease;">
-            </div>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-            <span style="font-size: 0.85rem; color: var(--text-secondary);">Sprint 1 en cours</span>
-            <span style="font-size: 0.85rem; font-weight: 700; color: var(--accent);">30%</span>
+        <div class="stat-label">Avancement Global</div>
+        <div class="stat-value" id="kpi-progress" style="color: var(--accent-vivid);">0%</div>
+        <div style="height: 6px; background: var(--border-light); border-radius: 99px; margin-top: 0.75rem;">
+            <div id="kpi-progress-bar" style="width: 0%; height: 100%; background: var(--accent-vivid); border-radius: 99px; transition: width 0.5s;"></div>
         </div>
     </div>
-
-    <div class="card">
-        <h2>Prochains Jalons</h2>
-        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <i class="ph-fill ph-check-circle" style="color: var(--success); font-size: 1.2rem;"></i>
-                <span style="font-size: 0.9rem;">Cadrage du projet</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <i class="ph ph-circle" style="color: var(--border); font-size: 1.2rem;"></i>
-                <span style="font-size: 0.9rem; color: var(--text-secondary);">Architecture & Documentation (Liv.
-                    A)</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <i class="ph ph-circle" style="color: var(--border); font-size: 1.2rem;"></i>
-                <span style="font-size: 0.9rem; color: var(--text-secondary);">Modélisation données (Liv. B)</span>
-            </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Avance / Retard</div>
+        <div class="stat-value" id="kpi-delay">0 JH</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;" id="kpi-delay-desc">Impact des évènements</div>
+    </div>
+    
+    <div class="stat-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <div class="stat-label" style="align-self: flex-start;">Météo du Projet</div>
+        <div id="kpi-weather-icon" style="font-size: 2.5rem; margin-top: 0.25rem;">☀️</div>
+        <div id="kpi-weather-text" style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-top: 0.25rem;">Ensoleillé</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-label">Budget Consommé</div>
+        <div class="stat-value" style="font-size: 1.4rem;" id="kpi-budget-consumed">0 €</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-top: 0.25rem;">sur <span id="kpi-budget-total">0 €</span></div>
+        <div style="height: 6px; background: var(--border-light); border-radius: 99px; margin-top: 0.75rem;">
+            <div id="kpi-budget-bar" style="width: 0%; height: 100%; background: var(--purple); border-radius: 99px; transition: width 0.5s, background 0.5s;"></div>
         </div>
     </div>
 </div>
+
+<script>
+const tasks = {{ tasks|tojson }};
+const collaborators = {{ collaborators|tojson }};
+const events = {{ events|tojson }};
+const costs = {{ costs|tojson }};
+const projectTotal = {{ project_total }};
+const weeks = {{ weeks|tojson }};
+
+function getTaskDurWeeks(t) {
+    if (!t.duration) return 1;
+    if (t.duration.includes('2 sem')) return 2;
+    if (t.duration.includes('j')) return 1;
+    return 1;
+}
+
+let avgTjm = 500;
+if (collaborators.length > 0) {
+    let sum = 0;
+    collaborators.forEach(c => sum += c.tjm_applied || 0);
+    avgTjm = sum / collaborators.length;
+}
+
+function updateDashboard(weekIndex) {
+    weekIndex = parseInt(weekIndex);
+    document.getElementById('date-display').innerText = "Semaine du " + weeks[weekIndex];
+    
+    // 1. Avancement Global (%)
+    let totalDur = 0;
+    let completedDur = 0;
+    
+    tasks.forEach(t => {
+        let dur = getTaskDurWeeks(t);
+        let start = t.start_week || 0;
+        totalDur += dur;
+        
+        if (weekIndex >= start + dur) {
+            completedDur += dur;
+        } else if (weekIndex > start && weekIndex < start + dur) {
+            completedDur += (weekIndex - start);
+        }
+    });
+    
+    let progressPct = totalDur > 0 ? Math.round((completedDur / totalDur) * 100) : 0;
+    document.getElementById('kpi-progress').innerText = progressPct + "%";
+    document.getElementById('kpi-progress-bar').style.width = progressPct + "%";
+    
+    // 2. Avance / Retard (JH)
+    let totalEventCosts = 0;
+    let totalEventSavings = 0;
+    // Note: We sum all events globally for now as they are project-wide adjustments
+    events.forEach(e => {
+        totalEventCosts += parseFloat(e.cost || 0);
+        totalEventSavings += parseFloat(e.saving || 0);
+    });
+    let netSurcout = totalEventCosts - totalEventSavings;
+    let delayJH = Math.round(netSurcout / avgTjm);
+    
+    let delayEl = document.getElementById('kpi-delay');
+    if (delayJH > 0) {
+        delayEl.innerText = "+" + delayJH + " JH";
+        delayEl.className = "stat-value text-danger";
+        document.getElementById('kpi-delay-desc').innerText = "Retard équivalent";
+    } else if (delayJH < 0) {
+        delayEl.innerText = delayJH + " JH";
+        delayEl.className = "stat-value text-success";
+        document.getElementById('kpi-delay-desc').innerText = "Avance équivalente";
+    } else {
+        delayEl.innerText = "0 JH";
+        delayEl.className = "stat-value";
+        document.getElementById('kpi-delay-desc').innerText = "Dans les temps";
+    }
+    
+    // 3. Météo du Projet
+    let totalScore = 0;
+    let activeCollabs = 0;
+    
+    collaborators.forEach(c => {
+        let activeTasks = tasks.filter(t => 
+            t.assignees && t.assignees.includes(c.name) &&
+            t.start_week <= weekIndex && (t.start_week + getTaskDurWeeks(t)) > weekIndex
+        );
+        
+        if (activeTasks.length > 0) {
+            let jhTotal = 0;
+            activeTasks.forEach(t => { jhTotal += (getTaskDurWeeks(t) === 2 ? 10 : 5); });
+            let tasksCount = activeTasks.length;
+            let totalPt = jhTotal + (tasksCount * 0.5);
+            
+            let score = 0;
+            if (totalPt > 6) score = 3;
+            else if (totalPt > 4.5) score = 2;
+            else if (totalPt > 3) score = 1;
+            else score = 0;
+            
+            totalScore += score;
+            activeCollabs++;
+        }
+    });
+    
+    let icon = "🏖️", text = "Au repos";
+    if (activeCollabs > 0) {
+        let avgScore = totalScore / activeCollabs;
+        if (avgScore >= 2.5) { icon = "⛈️"; text = "Orageux"; }
+        else if (avgScore >= 1.5) { icon = "🌧️"; text = "Pluvieux"; }
+        else if (avgScore >= 0.5) { icon = "☁️"; text = "Nuageux"; }
+        else { icon = "☀️"; text = "Ensoleillé"; }
+    }
+    document.getElementById('kpi-weather-icon').innerText = icon;
+    document.getElementById('kpi-weather-text').innerText = text;
+    
+    // 4. Budget Consommé vs Estimé
+    let consumedRH = 0;
+    tasks.forEach(t => {
+        let dur = getTaskDurWeeks(t);
+        let start = t.start_week || 0;
+        let pDur = 0;
+        if (weekIndex >= start + dur) pDur = dur;
+        else if (weekIndex > start && weekIndex < start + dur) pDur = weekIndex - start;
+        
+        if (pDur > 0) {
+            let days = pDur === 2 ? 10 : 5;
+            t.assignees.forEach(name => {
+                let co = collaborators.find(c => c.name === name);
+                if(co) consumedRH += (co.tjm_applied || 0) * days;
+            });
+        }
+    });
+    
+    let consumedSat = 0;
+    costs.forEach(c => consumedSat += parseFloat(c.amount || 0));
+    
+    // Total budget to date = HR to date + Satellites + Events surcout
+    let consumedTotal = consumedRH + consumedSat + netSurcout;
+    
+    document.getElementById('kpi-budget-consumed').innerText = Math.round(consumedTotal).toLocaleString('fr-FR') + " €";
+    document.getElementById('kpi-budget-total').innerText = Math.round(projectTotal).toLocaleString('fr-FR') + " €";
+    
+    let budgetPct = projectTotal > 0 ? Math.round((consumedTotal / projectTotal) * 100) : 0;
+    let bBar = document.getElementById('kpi-budget-bar');
+    bBar.style.width = Math.min(100, budgetPct) + "%";
+    
+    if (budgetPct > 100) bBar.style.background = "var(--danger)";
+    else if (budgetPct > 80) bBar.style.background = "var(--warning)";
+    else bBar.style.background = "var(--purple)";
+}
+
+setTimeout(() => updateDashboard(document.getElementById('date-slider').value), 50);
+</script>
 
 <div class="card" style="margin-top: 0;">
     <h2>Résumé du Projet</h2>
