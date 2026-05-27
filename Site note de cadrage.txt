@@ -1,0 +1,6 @@
+Visuel et data
+https://huggingface.co/spaces/BeanEden/gestion_projet
+
+
+Code
+https://github.com/BeanEden/Gestion_de_projet_note_de_cadrage

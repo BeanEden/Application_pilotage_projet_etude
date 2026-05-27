@@ -153,7 +153,11 @@ def perimetre():
 def parties_prenantes():
     WORKING_DAYS_2026 = 251
     stakeholders = get_collaborators()
-    return render_template('stakeholders.html', title="Parties Prenantes", stakeholders=stakeholders, working_days=WORKING_DAYS_2026)
+    tasks = load_json('tasks.json')
+    costs = load_json('costs.json')
+    info = load_json('project_info.json')
+    if not info: info = {}
+    return render_template('stakeholders.html', title="Parties Prenantes", stakeholders=stakeholders, working_days=WORKING_DAYS_2026, tasks=tasks, costs=costs, info=info)
 
 @main.route('/cadrage/backlog')
 def backlog():

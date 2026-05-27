@@ -9,6 +9,31 @@
     <button class="btn btn-primary" onclick="openModal()"><i class="ph ph-plus"></i> Nouveau Membre</button>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    <div class="card" style="display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Présentation de l'équipe</h2>
+            <button class="btn btn-secondary" onclick="saveStakeholdersIntro()" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Enregistrer</button>
+        </div>
+        <div id="stakeholders-intro" contenteditable="true" style="flex: 1; padding: 1rem; background: var(--bg-body); border-radius: 8px; border: 1px solid var(--border); min-height: 150px; outline: none; font-size: 0.95rem; line-height: 1.6;">
+            {{ info.stakeholders_intro | default('L\'équipe est composée de...', true) | safe }}
+        </div>
+    </div>
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Répartition des Coûts RH</h2>
+            <select id="chart-type" class="form-control" style="width: auto; padding: 0.3rem 0.8rem; font-size: 0.85rem;" onchange="renderCostChart()">
+                <option value="category">Par Catégorie</option>
+                <option value="collaborator">Par Collaborateur</option>
+            </select>
+        </div>
+        <div style="position: relative; height: 200px; width: 100%;">
+            <canvas id="costChart"></canvas>
+        </div>
+    </div>
+</div>
+
 <div class="card" style="padding: 0; overflow: hidden;">
     <table>
         <thead>
@@ -121,6 +146,82 @@
 <script>
 const WORKING_DAYS = {{ working_days }};
 let currentStakeholders = {{ stakeholders|tojson }};
+const tasks = {{ tasks|tojson }};
+const info = {{ info|tojson }};
+
+let costChartInstance = null;
+
+function renderCostChart() {
+    const type = document.getElementById('chart-type').value;
+    let dataMap = {};
+
+    tasks.forEach(t => {
+        let durWeeks = 1;
+        if (t.duration && t.duration.includes('2 sem')) durWeeks = 2;
+        let days = durWeeks === 2 ? 10 : 5;
+        
+        if(t.assignees) {
+            t.assignees.forEach(name => {
+                let co = currentStakeholders.find(c => c.name === name);
+                if(co) {
+                    let cost = (co.tjm_applied || 0) * days;
+                    let key = type === 'category' ? (co.category || 'Inconnu') : name;
+                    dataMap[key] = (dataMap[key] || 0) + cost;
+                }
+            });
+        }
+    });
+
+    let labels = Object.keys(dataMap);
+    let data = Object.values(dataMap);
+
+    const bgColors = ['#2d2d6e', '#6366f1', '#30d158', '#ff9f0a', '#ff3b30', '#5ac8fa'];
+
+    if (costChartInstance) {
+        costChartInstance.destroy();
+    }
+
+    const ctx = document.getElementById('costChart').getContext('2d');
+    costChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: bgColors,
+                borderWidth: 0,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { 
+                    position: 'right',
+                    labels: { boxWidth: 12, font: { size: 10 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) { return ' ' + ctx.raw.toLocaleString('fr-FR') + ' €'; }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function saveStakeholdersIntro() {
+    const content = document.getElementById('stakeholders-intro').innerHTML;
+    info.stakeholders_intro = content;
+    fetch('/api/save-project-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(info)
+    }).then(() => alert("Texte enregistré !"));
+}
+
+setTimeout(renderCostChart, 100);
 
 function calculateTJM() {
     const salary = parseFloat(document.getElementById('form-salary').value) || 0;
