@@ -84,6 +84,7 @@
                     <option value="Cadre">Cadre</option>
                     <option value="ETAM">ETAM</option>
                     <option value="Ouvrier">Ouvrier</option>
+                    <option value="Externe">Externe</option>
                 </select>
             </div>
             <div class="form-group">
@@ -119,6 +120,7 @@
 
 <script>
 const WORKING_DAYS = {{ working_days }};
+let currentStakeholders = {{ stakeholders|tojson }};
 
 function calculateTJM() {
     const salary = parseFloat(document.getElementById('form-salary').value) || 0;
@@ -172,16 +174,51 @@ function editPerson(el) {
 }
 
 function saveMember() {
+    const id = document.getElementById('edit-id').value;
     const name = document.getElementById('form-name').value;
+    const role = document.getElementById('form-role').value;
+    const category = document.getElementById('form-category').value;
+    const salary = parseFloat(document.getElementById('form-salary').value) || 0;
+    const charge = (parseFloat(document.getElementById('form-charge').value) || 0) / 100;
+    const tjmApp = parseFloat(document.getElementById('form-tjm-app').value) || 0;
+
     if(!name) return;
-    closeModal();
-    location.reload(); // Simplified — would POST in production
+
+    if (id) {
+        const idx = currentStakeholders.findIndex(s => s.id.toString() === id.toString());
+        if (idx !== -1) {
+            currentStakeholders[idx] = { ...currentStakeholders[idx], name, role, category, salary, charge_rate: charge, tjm_applied: tjmApp };
+        }
+    } else {
+        currentStakeholders.push({
+            id: 'sh_' + Date.now(),
+            name, role, category, salary, charge_rate: charge, tjm_applied: tjmApp
+        });
+    }
+
+    fetch('/api/save-collaborators', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentStakeholders)
+    }).then(() => {
+        closeModal();
+        location.reload();
+    });
 }
 
 function removeItem(el) {
     if(confirm("Supprimer ce membre ?")) {
-        el.closest('tr').style.opacity = '0';
-        setTimeout(() => el.closest('tr').remove(), 200);
+        const row = el.closest('.list-item-row');
+        const id = row.dataset.id;
+        currentStakeholders = currentStakeholders.filter(s => s.id.toString() !== id.toString());
+        fetch('/api/save-collaborators', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentStakeholders)
+        }).then(() => {
+            row.style.opacity = '0';
+            setTimeout(() => row.remove(), 200);
+        });
     }
 }
 </script>

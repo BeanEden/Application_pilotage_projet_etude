@@ -10,9 +10,10 @@
         "duration": "1 sem",
         "id": "C0-1",
         "raci": {
-            "cl": "R",
-            "jc": "A/R",
-            "lu": "R"
+            "cl": "A",
+            "jc": "C",
+            "lu": "AR",
+            "sh_1779869800150": "I"
         },
         "sprint": 1,
         "start_week": 0,
@@ -28,9 +29,10 @@
         "duration": "1 sem",
         "id": "C0-5",
         "raci": {
-            "cl": "I",
-            "jc": "A/R",
-            "lu": "R"
+            "cl": "C",
+            "jc": "A",
+            "lu": "AR",
+            "sh_1779869800150": "I"
         },
         "sprint": 1,
         "start_week": 1,
@@ -47,8 +49,9 @@
         "id": "A1-5",
         "raci": {
             "cl": "R",
-            "jc": "A/R",
-            "lu": "C"
+            "jc": "C",
+            "lu": "AR",
+            "sh_1779869800150": "I"
         },
         "sprint": 1,
         "start_week": 1,
@@ -66,7 +69,8 @@
         "raci": {
             "cl": "R",
             "jc": "C",
-            "lu": "A/R"
+            "lu": "A/R",
+            "sh_1779869800150": "I"
         },
         "sprint": 1,
         "start_week": 1,
@@ -81,9 +85,10 @@
         "duration": "1 sem",
         "id": "C1",
         "raci": {
-            "cl": "A/R",
-            "jc": "I",
-            "lu": "I"
+            "cl": "I",
+            "jc": "C",
+            "lu": "AR",
+            "sh_1779869800150": "I"
         },
         "sprint": 2,
         "start_week": 2,
@@ -99,9 +104,10 @@
         "duration": "2 sem",
         "id": "C2-3",
         "raci": {
-            "cl": "A/R",
-            "jc": "R",
-            "lu": "I"
+            "cl": "I",
+            "jc": "C",
+            "lu": "AR",
+            "sh_1779869800150": "I"
         },
         "sprint": 2,
         "start_week": 3,
@@ -117,8 +123,9 @@
         "id": "CL-1-4",
         "raci": {
             "cl": "A/R",
-            "jc": "I",
-            "lu": "I"
+            "jc": "C",
+            "lu": "I",
+            "sh_1779869800150": "I"
         },
         "sprint": 2,
         "start_week": 2,
@@ -133,9 +140,10 @@
         "duration": "1 sem",
         "id": "C4",
         "raci": {
-            "cl": "A/R",
+            "cl": "I",
             "jc": "C",
-            "lu": "I"
+            "lu": "AR",
+            "sh_1779869800150": "I"
         },
         "sprint": 2,
         "start_week": 4,
@@ -152,7 +160,8 @@
         "raci": {
             "cl": "I",
             "jc": "A/R",
-            "lu": "C"
+            "lu": "C",
+            "sh_1779869800150": "I"
         },
         "sprint": 3,
         "start_week": 5,
@@ -169,8 +178,9 @@
         "id": "D2-7",
         "raci": {
             "cl": "I",
-            "jc": "C",
-            "lu": "A/R"
+            "jc": "AR",
+            "lu": "C",
+            "sh_1779869800150": "I"
         },
         "sprint": 3,
         "start_week": 6,
@@ -186,8 +196,9 @@
         "id": "CL-7-9",
         "raci": {
             "cl": "A/R",
-            "jc": "I",
-            "lu": "I"
+            "jc": "C",
+            "lu": "C",
+            "sh_1779869800150": "I"
         },
         "sprint": 3,
         "start_week": 6,
@@ -204,9 +215,10 @@
         "duration": "2 sem",
         "id": "E1-7",
         "raci": {
-            "cl": "R",
+            "cl": "C",
             "jc": "A/R",
-            "lu": "R"
+            "lu": "R",
+            "sh_1779869800150": "I"
         },
         "sprint": 4,
         "start_week": 6,
@@ -223,9 +235,10 @@
         "duration": "1 sem",
         "id": "E8",
         "raci": {
-            "cl": "R",
+            "cl": "C",
             "jc": "A/R",
-            "lu": "R"
+            "lu": "R",
+            "sh_1779869800150": "I"
         },
         "sprint": 4,
         "start_week": 8,
@@ -242,9 +255,10 @@
         "duration": "2 sem",
         "id": "F1-5",
         "raci": {
-            "cl": "R",
-            "jc": "R",
-            "lu": "A/R"
+            "cl": "C",
+            "jc": "AR",
+            "lu": "R",
+            "sh_1779869800150": "I"
         },
         "sprint": 4,
         "start_week": 7,
@@ -258,6 +272,12 @@
         "deps": "C0-5",
         "duration": "1 sem",
         "id": "T-9",
+        "raci": {
+            "cl": "I",
+            "jc": "AR",
+            "lu": "R",
+            "sh_1779869800150": "C"
+        },
         "sprint": 2,
         "start_week": 2,
         "task": "Liaison mail SharePoint via PowerAutomate",
@@ -271,9 +291,34 @@
         "deps": "C0-5",
         "duration": "2 j",
         "id": "T-10",
+        "raci": {
+            "cl": "R",
+            "jc": "I",
+            "lu": "AR",
+            "sh_1779869800150": "C"
+        },
         "sprint": 2,
         "start_week": 2,
         "task": "Ajouts de formats",
         "type": "Évolution d'une tâche existante"
+    },
+    {
+        "assignees": [
+            "Ludovic PICARD"
+        ],
+        "bucket": "Cadrage",
+        "deps": "D1",
+        "duration": "1 sem",
+        "id": "T-11",
+        "sprint": 3,
+        "start_week": 6,
+        "task": "Intégration MCP PowerBI",
+        "type": "Tâche originelle",
+        "raci": {
+            "jc": "C",
+            "cl": "I",
+            "lu": "AR",
+            "sh_1779869800150": "I"
+        }
     }
 ]

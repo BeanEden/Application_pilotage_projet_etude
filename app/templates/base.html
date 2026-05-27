@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,11 +8,13 @@
     <meta name="description" content="Tableau de bord de suivi du projet NovaRetail — M2 Big Data, Sup de Vinci.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
+
 <body>
     <nav class="sidebar">
         <div class="logo">NOVARETAIL</div>
@@ -22,20 +25,24 @@
                 </a>
             </li>
 
-            <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Note de cadrage</li>
-            
+            <li
+                style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">
+                Note de cadrage</li>
+
             <li class="nav-item">
                 <a href="{{ url_for('main.contexte') }}" class="nav-link {{ 'active' if '/contexte' in request.path }}">
                     <i class="ph ph-info"></i> Contexte
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url_for('main.perimetre') }}" class="nav-link {{ 'active' if '/perimetre' in request.path }}">
+                <a href="{{ url_for('main.perimetre') }}"
+                    class="nav-link {{ 'active' if '/perimetre' in request.path }}">
                     <i class="ph ph-target"></i> Périmètre
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url_for('main.parties_prenantes') }}" class="nav-link {{ 'active' if '/parties-prenantes' in request.path }}">
+                <a href="{{ url_for('main.parties_prenantes') }}"
+                    class="nav-link {{ 'active' if '/parties-prenantes' in request.path }}">
                     <i class="ph ph-users-three"></i> Équipe & RH
                 </a>
             </li>
@@ -45,12 +52,25 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url_for('main.architecture') }}" class="nav-link {{ 'active' if '/architecture' in request.path }}">
+                <a href="{{ url_for('main.architecture') }}"
+                    class="nav-link {{ 'active' if '/architecture' in request.path }}">
                     <i class="ph ph-intersect"></i> Architecture
                 </a>
             </li>
-
-            <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Pilotage</li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.modelisation') }}"
+                    class="nav-link {{ 'active' if '/modelisation' in request.path }}">
+                    <i class="ph ph-database"></i> Modélisation
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.devis') }}" class="nav-link {{ 'active' if '/devis' in request.path }}">
+                    <i class="ph ph-file-invoice"></i> Devis Client
+                </a>
+            </li>
+            <li
+                style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">
+                Pilotage</li>
 
             <li class="nav-item">
                 <a href="{{ url_for('main.backlog') }}" class="nav-link {{ 'active' if '/backlog' in request.path }}">
@@ -73,20 +93,24 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url_for('main.evenements') }}" class="nav-link {{ 'active' if '/evenements' in request.path }}">
+                <a href="{{ url_for('main.evenements') }}"
+                    class="nav-link {{ 'active' if '/evenements' in request.path }}">
                     <i class="ph ph-lightning"></i> Journal des Évènements
                 </a>
             </li>
 
-            <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Financier</li>
-            
+            <li
+                style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">
+                Financier</li>
+
             <li class="nav-item">
                 <a href="{{ url_for('main.couts') }}" class="nav-link {{ 'active' if '/couts' in request.path }}">
                     <i class="ph ph-receipt"></i> Coûts Satellites
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url_for('main.exploitation') }}" class="nav-link {{ 'active' if '/exploitation' in request.path }}">
+                <a href="{{ url_for('main.exploitation') }}"
+                    class="nav-link {{ 'active' if '/exploitation' in request.path }}">
                     <i class="ph ph-coins"></i> Coûts d'Exploitation
                 </a>
             </li>
@@ -96,24 +120,24 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ url_for('main.rentabilite') }}" class="nav-link {{ 'active' if '/rentabilite' in request.path }}">
+                <a href="{{ url_for('main.rentabilite') }}"
+                    class="nav-link {{ 'active' if '/rentabilite' in request.path }}">
                     <i class="ph ph-chart-line-up"></i> Rentabilité
                 </a>
             </li>
-            <li class="nav-item">
-                <a href="{{ url_for('main.devis') }}" class="nav-link {{ 'active' if '/devis' in request.path }}">
-                    <i class="ph ph-file-invoice"></i> Devis Client
-                </a>
-            </li>
+
             <li class="nav-item">
                 <a href="{{ url_for('main.roi') }}" class="nav-link {{ 'active' if '/roi' in request.path }}">
                     <i class="ph ph-trend-up"></i> Calcul ROI
                 </a>
             </li>
 
-            <li style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">Reporting</li>
+            <li
+                style="padding: 1.25rem 0.75rem 0.4rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.2); font-weight: 700;">
+                Reporting</li>
             <li class="nav-item">
-                <a href="{{ url_for('main.export_page') }}" class="nav-link {{ 'active' if '/export' in request.path }}">
+                <a href="{{ url_for('main.export_page') }}"
+                    class="nav-link {{ 'active' if '/export' in request.path }}">
                     <i class="ph ph-printer"></i> Export Rapport
                 </a>
             </li>
@@ -126,4 +150,5 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
+
 </html>

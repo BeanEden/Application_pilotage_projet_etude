@@ -1,0 +1,838 @@
+[
+    {
+        "id": "mod_novaretail_gold",
+        "title": "NovaRetail — Modèle Dimensionnel Gold Layer",
+        "description": "Schéma en étoile — 1 table de fait + 6 dimensions + 5 tables agrégat Gold \n\nTable de fait : Fact_commande_ligne\n\nDimensions :\n- Commande\n- Client\n- Produit\n- Temps\n- Fournisseur\n- Commerciaux",
+        "images": [],
+        "tables": [
+            {
+                "category": "fact",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "id_ligne",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "id_commande",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "id_client",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "id_produit",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "id_temps",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "id_fournisseur",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "id_commercial",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "qte_kg",
+                        "type": "DECIMAL(10,3)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "pu_ht_eur",
+                        "type": "DECIMAL(10,4)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "total_ht_eur",
+                        "type": "DECIMAL(12,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "remise_pct",
+                        "type": "DECIMAL(5,2)"
+                    }
+                ],
+                "name": "FACT_COMMANDE_LIGNE"
+            },
+            {
+                "category": "dimension",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "id_commande",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "numero_commande",
+                        "type": "VARCHAR(50)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ref_contrat",
+                        "type": "VARCHAR(50)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "date_commande",
+                        "type": "DATE"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "date_livraison",
+                        "type": "DATE"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "heure_livraison",
+                        "type": "VARCHAR(10)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "mode_livraison",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "mode_reglement",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "incoterm",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "sous_total_ht",
+                        "type": "DECIMAL(12,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "remise_pct",
+                        "type": "DECIMAL(5,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "remise_eur",
+                        "type": "DECIMAL(12,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "total_ht_net",
+                        "type": "DECIMAL(12,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "tva_pct",
+                        "type": "DECIMAL(5,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "tva_eur",
+                        "type": "DECIMAL(12,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "total_ttc_eur",
+                        "type": "DECIMAL(12,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "fichier_source",
+                        "type": "VARCHAR(200)"
+                    }
+                ],
+                "name": "DIM_COMMANDE"
+            },
+            {
+                "category": "dimension",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "id_client",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nom_client",
+                        "type": "VARCHAR(200)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "siren",
+                        "type": "VARCHAR(9)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "contact_nom",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "contact_email",
+                        "type": "VARCHAR(200)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "contact_tel",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "adresse_rue",
+                        "type": "VARCHAR(200)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "code_postal",
+                        "type": "VARCHAR(5)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ville",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "mode_livraison",
+                        "type": "VARCHAR(100)"
+                    }
+                ],
+                "name": "DIM_CLIENT"
+            },
+            {
+                "category": "dimension",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "id_produit",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ref_produit",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "designation",
+                        "type": "VARCHAR(300)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "famille",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "calibre",
+                        "type": "VARCHAR(50)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "conditionnement",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "origine",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "categorie",
+                        "type": "VARCHAR(50)"
+                    }
+                ],
+                "name": "DIM_PRODUIT"
+            },
+            {
+                "category": "dimension",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "id_temps",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "date_commande",
+                        "type": "DATE"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "annee",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "trimestre",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "mois",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "mois_libelle",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "semaine",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "jour",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "jour_semaine",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "est_weekend",
+                        "type": "BOOLEAN"
+                    }
+                ],
+                "name": "DIM_TEMPS"
+            },
+            {
+                "category": "dimension",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "id_fournisseur",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nom_fournisseur",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "adresse",
+                        "type": "VARCHAR(200)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "email",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "telephone",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "incoterm_defaut",
+                        "type": "VARCHAR(50)"
+                    }
+                ],
+                "name": "DIM_FOURNISSEUR"
+            },
+            {
+                "category": "dimension",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "id_commercial",
+                        "type": "BIGINT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nom_commercial",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "prenom",
+                        "type": "VARCHAR(50)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "email",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "telephone",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "fonction",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "region",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "equipe",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "responsable",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "date_entree",
+                        "type": "DATE"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "actif",
+                        "type": "BOOLEAN"
+                    }
+                ],
+                "name": "DIM_COMMERCIAUX"
+            },
+            {
+                "category": "aggregate",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "periode_zip",
+                        "type": "VARCHAR(7)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "annee",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "mois",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "mois_libelle",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_total",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ttc_total",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nb_commandes",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nb_clients_actifs",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nb_articles_distincts",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "panier_moyen_ht",
+                        "type": "DECIMAL(10,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "quantite_totale_kg",
+                        "type": "DECIMAL(14,3)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_vs_mois_precedent_pct",
+                        "type": "DECIMAL(7,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_vs_mois_precedent_abs",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "top_article_ref",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "top_article_designation",
+                        "type": "VARCHAR(300)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "top_article_ca_ht",
+                        "type": "DECIMAL(12,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "top_client_lieu",
+                        "type": "VARCHAR(200)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "top_client_ca_ht",
+                        "type": "DECIMAL(12,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "gold_timestamp",
+                        "type": "TIMESTAMP"
+                    }
+                ],
+                "name": "gold_kpi_mensuel"
+            },
+            {
+                "category": "aggregate",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "gold_client_id",
+                        "type": "VARCHAR(64)"
+                    },
+                    {
+                        "is_pk": true,
+                        "name": "periode_zip",
+                        "type": "VARCHAR(7)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "lieu_livraison",
+                        "type": "VARCHAR(300)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ville_client",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_total",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ttc_total",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nb_commandes",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nb_lignes_articles",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "panier_moyen_ht",
+                        "type": "DECIMAL(10,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "quantite_totale_kg",
+                        "type": "DECIMAL(14,3)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_part_pct",
+                        "type": "DECIMAL(7,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "premier_achat",
+                        "type": "DATE"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "dernier_achat",
+                        "type": "DATE"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "jours_depuis_dernier_achat",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "gold_timestamp",
+                        "type": "TIMESTAMP"
+                    }
+                ],
+                "name": "gold_ca_par_client"
+            },
+            {
+                "category": "aggregate",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "gold_article_id",
+                        "type": "VARCHAR(64)"
+                    },
+                    {
+                        "is_pk": true,
+                        "name": "periode_zip",
+                        "type": "VARCHAR(7)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "reference_article",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "designation",
+                        "type": "VARCHAR(300)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "categorie",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "origine_pays",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_total",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "quantite_totale",
+                        "type": "DECIMAL(14,3)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "unite",
+                        "type": "VARCHAR(50)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nb_commandes",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "prix_moyen_ht",
+                        "type": "DECIMAL(10,4)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_part_pct",
+                        "type": "DECIMAL(7,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "quantite_vs_periode_precedente_pct",
+                        "type": "DECIMAL(7,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "gold_timestamp",
+                        "type": "TIMESTAMP"
+                    }
+                ],
+                "name": "gold_top_articles"
+            },
+            {
+                "category": "aggregate",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "periode_zip",
+                        "type": "VARCHAR(7)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "annee",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "mois",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_cumule_annee",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_mm3",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "ca_ht_mm6",
+                        "type": "DECIMAL(14,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "taux_croissance_mensuel_pct",
+                        "type": "DECIMAL(7,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "taux_croissance_annuel_pct",
+                        "type": "DECIMAL(7,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nb_commandes",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nb_clients_actifs",
+                        "type": "INT"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "panier_moyen_ht",
+                        "type": "DECIMAL(10,2)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "gold_timestamp",
+                        "type": "TIMESTAMP"
+                    }
+                ],
+                "name": "gold_evolution_mensuelle"
+            },
+            {
+                "category": "aggregate",
+                "columns": [
+                    {
+                        "is_pk": true,
+                        "name": "kpi_id",
+                        "type": "VARCHAR(64)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "nom_kpi",
+                        "type": "VARCHAR(100)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "valeur",
+                        "type": "VARCHAR(50)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "unite_kpi",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "periode_reference",
+                        "type": "VARCHAR(20)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "description",
+                        "type": "VARCHAR(300)"
+                    },
+                    {
+                        "is_pk": false,
+                        "name": "gold_timestamp",
+                        "type": "TIMESTAMP"
+                    }
+                ],
+                "name": "gold_kpi_global"
+            }
+        ],
+        "relationships": [
+            {
+                "from_col": "id_commande",
+                "from_table": "DIM_COMMANDE",
+                "to_col": "id_commande",
+                "to_table": "FACT_COMMANDE_LIGNE",
+                "type": "1:N"
+            },
+            {
+                "from_col": "id_client",
+                "from_table": "DIM_CLIENT",
+                "to_col": "id_client",
+                "to_table": "FACT_COMMANDE_LIGNE",
+                "type": "1:N"
+            },
+            {
+                "from_col": "id_produit",
+                "from_table": "DIM_PRODUIT",
+                "to_col": "id_produit",
+                "to_table": "FACT_COMMANDE_LIGNE",
+                "type": "1:N"
+            },
+            {
+                "from_col": "id_temps",
+                "from_table": "DIM_TEMPS",
+                "to_col": "id_temps",
+                "to_table": "FACT_COMMANDE_LIGNE",
+                "type": "1:N"
+            },
+            {
+                "from_col": "id_fournisseur",
+                "from_table": "DIM_FOURNISSEUR",
+                "to_col": "id_fournisseur",
+                "to_table": "FACT_COMMANDE_LIGNE",
+                "type": "1:N"
+            },
+            {
+                "from_col": "id_commercial",
+                "from_table": "DIM_COMMERCIAUX",
+                "to_col": "id_commercial",
+                "to_table": "FACT_COMMANDE_LIGNE",
+                "type": "1:N"
+            },
+            {
+                "from_col": "periode_zip",
+                "from_table": "gold_evolution_mensuelle",
+                "to_col": "periode_zip",
+                "to_table": "gold_kpi_mensuel",
+                "type": "1:1"
+            }
+        ]
+    }
+]

@@ -350,6 +350,19 @@
                                 "subcategory": "",
                                 "summary": "Réception des mails avec les bons de commande",
                                 "title": "Réception des mails"
+                            },
+                            {
+                                "category": "Ingestion",
+                                "detail": "",
+                                "id": "step_1779815401291",
+                                "images": [
+                                    "/static/uploads/architecture/n8n.png"
+                                ],
+                                "previous_step_id": "",
+                                "previous_step_title": "",
+                                "subcategory": "",
+                                "summary": "Récupération des Pj des mails via n8n",
+                                "title": "Récupération des bons de commandes"
                             }
                         ]
                     }
@@ -358,30 +371,30 @@
         ],
         "steps": [
             {
-                "category": "Ingestion",
-                "detail": "",
                 "id": "step_1779815331491",
-                "images": [
-                    "/static/uploads/architecture/Logo_outlook.jpg"
-                ],
-                "previous_step_id": "",
-                "previous_step_title": "",
+                "title": "Réception des mails",
+                "category": "Ingestion",
                 "subcategory": "",
                 "summary": "Réception des mails avec les bons de commande",
-                "title": "Réception des mails"
+                "detail": "",
+                "images": [
+                    "/static/uploads/architecture/gmail.png"
+                ],
+                "previous_step_id": "",
+                "previous_step_title": ""
             },
             {
-                "id": "step_1779815401291",
-                "title": "Récupération des bons de commandes",
                 "category": "Ingestion",
-                "subcategory": "",
-                "summary": "Récupération des Pj des mails via n8n",
                 "detail": "",
+                "id": "step_1779815401291",
                 "images": [
                     "/static/uploads/architecture/n8n.png"
                 ],
                 "previous_step_id": "",
-                "previous_step_title": ""
+                "previous_step_title": "",
+                "subcategory": "",
+                "summary": "Récupération des Pj des mails via n8n",
+                "title": "Récupération des bons de commandes"
             }
         ],
         "subcategory": ""

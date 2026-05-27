@@ -26,6 +26,25 @@ def get_collaborators():
         # 'tjm_applied' remains the billing TJM loaded from collaborators.json
     return collabs
 
+def get_project_total():
+    tasks = load_json('tasks.json')
+    collaborators = get_collaborators()
+    costs = load_json('costs.json')
+    
+    total_rh = 0
+    for t in tasks:
+        days = 10 if '2 sem' in t.get('duration', '') else 5
+        for name in t.get('assignees', []):
+            co = next((c for c in collaborators if c['name'] == name), None)
+            if co: total_rh += co.get('tjm_applied', 0) * days
+    
+    total_sat = 0
+    for c in costs:
+        try: total_sat += float(c.get('amount', 0))
+        except: pass
+
+    return total_rh + total_sat
+
 def save_json(filename, data):
     path = os.path.join(DATA_DIR, filename)
     with open(path, 'w', encoding='utf-8') as f:
@@ -41,6 +60,16 @@ def save_roi():
 def save_costs():
     data = request.json
     save_json('costs.json', data)
+    return jsonify({"status": "success"})
+
+@main.route('/api/save-collaborators', methods=['POST'])
+def save_collaborators():
+    data = request.json
+    # Optionally strip the dynamically calculated 'tjm' before saving
+    for c in data:
+        if 'tjm' in c:
+            del c['tjm']
+    save_json('collaborators.json', data)
     return jsonify({"status": "success"})
 
 @main.route('/api/save-tasks', methods=['POST'])
@@ -123,7 +152,8 @@ def gantt():
 @main.route('/cadrage/raci')
 def raci():
     tasks = load_json('tasks.json')
-    return render_template('raci.html', title="Matrice RACI", tasks=tasks)
+    collaborators = get_collaborators()
+    return render_template('raci.html', title="Matrice RACI", tasks=tasks, collaborators=collaborators)
 
 @main.route('/cadrage/couts')
 def couts():
@@ -139,29 +169,23 @@ def roi():
     roi_data = load_json('roi.json')
     if not roi_data: roi_data = {"revenues": [], "savings": []}
     
-    tasks = load_json('tasks.json')
-    collaborators = get_collaborators()
-    costs = load_json('costs.json')
-    
-    total_rh = 0
-    for t in tasks:
-        days = 10 if '2 sem' in t['duration'] else 5
-        for name in t['assignees']:
-            co = next((c for c in collaborators if c['name'] == name), None)
-            if co: total_rh += co['tjm_applied'] * days
-    
-    total_sat = 0
-    for c in costs:
-        try: total_sat += float(c.get('amount', 0))
-        except: pass
-
-    project_total = total_rh + total_sat
+    project_total = get_project_total()
     op_costs = load_json('operating_costs.json')
     return render_template('roi.html', title="Calcul ROI", roi_data=roi_data, project_total=project_total, op_costs=op_costs)
 
+@main.route('/api/save-risks', methods=['POST'])
+def save_risks():
+    data = request.json
+    save_json('risks.json', data)
+    return jsonify({"status": "success"})
+
 @main.route('/cadrage/risques')
 def risques():
-    return render_template('risks.html', title="Risques & Hypothèses")
+    risks = load_json('risks.json')
+    if not risks:
+        risks = []
+    project_total = get_project_total()
+    return render_template('risks.html', title="Risques & Hypothèses", risks=risks, project_total=project_total)
 
 @main.route('/cadrage/architecture')
 def architecture():
@@ -225,6 +249,19 @@ def architecture():
         arch['phases'] = phases
 
     return render_template('architecture.html', title="Architecture du Projet", steps=architectures)
+
+@main.route('/api/save-modelisation', methods=['POST'])
+def save_modelisation():
+    data = request.json
+    save_json('modelisation.json', data)
+    return jsonify({"status": "success"})
+
+@main.route('/cadrage/modelisation')
+def modelisation():
+    modelisations = load_json('modelisation.json')
+    if not modelisations:
+        modelisations = []
+    return render_template('modelisation.html', title="Modélisation des Tables", modelisations=modelisations)
 
 @main.route('/cadrage/budget')
 def budget():
@@ -299,6 +336,7 @@ def export_page():
         {"id": "parties-prenantes", "title": "Équipe & RH", "url": "/cadrage/parties-prenantes"},
         {"id": "risques", "title": "Risques & Hypothèses", "url": "/cadrage/risques"},
         {"id": "architecture", "title": "Architecture du Projet", "url": "/cadrage/architecture"},
+        {"id": "modelisation", "title": "Modélisation des Tables", "url": "/cadrage/modelisation"},
         {"id": "backlog", "title": "Backlog Détaillé", "url": "/cadrage/backlog"},
         {"id": "gantt", "title": "Planning Gantt", "url": "/cadrage/gantt"},
         {"id": "raci", "title": "Matrice RACI", "url": "/cadrage/raci"},

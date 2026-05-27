@@ -5,47 +5,19 @@
 <div class="page-header">
     <div>
         <h1>Matrice RACI</h1>
-        <p class="subtitle">Répartition des responsabilités par livrable technique. Cliquez sur un badge pour le modifier.</p>
+        <p class="subtitle">Répartition des responsabilités par livrable technique. Cliquez sur un badge pour le
+            modifier.</p>
     </div>
     <div style="display: flex; gap: 0.75rem; align-items: center;">
-        <div style="background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 2px;">
-            <button class="btn-group" onclick="switchRaciView('sprint', this)" id="btn-raci-sprint" style="background: var(--accent); color: white;">Par Sprint</button>
-            <button class="btn-group" onclick="switchRaciView('bucket', this)" id="btn-raci-bucket" style="background: transparent; color: var(--text-secondary);">Par Bucket</button>
+        <div
+            style="background: var(--bg-card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); display: flex; gap: 2px;">
+            <button class="btn-group" onclick="switchRaciView('sprint', this)" id="btn-raci-sprint"
+                style="background: var(--accent); color: white;">Par Sprint</button>
+            <button class="btn-group" onclick="switchRaciView('bucket', this)" id="btn-raci-bucket"
+                style="background: transparent; color: var(--text-secondary);">Par Bucket</button>
         </div>
     </div>
 </div>
-
-<div id="raci-container">
-    <!-- Grouped tables will be injected here -->
-</div>
-
-<!-- RACI Edit Modal -->
-<div id="raciModal" class="modal">
-    <div class="modal-content" style="max-width: 400px;">
-        <h2>Modifier le rôle RACI</h2>
-        <p id="raciModalDesc" style="font-size: 0.85rem; margin-bottom: 1.5rem; color: var(--text-secondary);"></p>
-        
-        <input type="hidden" id="edit-raci-task-id">
-        <input type="hidden" id="edit-raci-person">
-        
-        <div class="form-group">
-            <label>Sélectionner le rôle</label>
-            <select id="form-raci-val" class="form-control">
-                <option value="R">R — Responsible</option>
-                <option value="A">A — Accountable</option>
-                <option value="AR">AR — Accountable & Responsible</option>
-                <option value="C">C — Consulted</option>
-                <option value="I">I — Informed</option>
-            </select>
-        </div>
-        
-        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
-            <button class="btn btn-secondary" onclick="closeRaciModal()">Annuler</button>
-            <button class="btn btn-primary" onclick="saveRaci()">Appliquer</button>
-        </div>
-    </div>
-</div>
-
 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 2rem;">
     <div class="card" style="padding: 1.25rem;">
         <div style="font-weight: 800; color: #4f46e5; margin-bottom: 0.3rem;">R — Responsible</div>
@@ -64,142 +36,230 @@
         <p style="font-size: 0.8rem;">Tenu informé.</p>
     </div>
 </div>
+<div id="raci-container">
+    <!-- Grouped tables will be injected here -->
+</div>
+
+<!-- RACI Edit Modal -->
+<div id="raciModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <h2>Modifier le rôle RACI</h2>
+        <p id="raciModalDesc" style="font-size: 0.85rem; margin-bottom: 1.5rem; color: var(--text-secondary);"></p>
+
+        <input type="hidden" id="edit-raci-task-id">
+        <input type="hidden" id="edit-raci-person">
+
+        <div class="form-group">
+            <label>Sélectionner le rôle</label>
+            <select id="form-raci-val" class="form-control">
+                <option value="-">- (Non assigné)</option>
+                <option value="R">R — Responsible</option>
+                <option value="A">A — Accountable</option>
+                <option value="AR">AR — Accountable & Responsible</option>
+                <option value="C">C — Consulted</option>
+                <option value="I">I — Informed</option>
+            </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+            <button class="btn btn-secondary" onclick="closeRaciModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="saveRaci()">Appliquer</button>
+        </div>
+    </div>
+</div>
+
+
 
 <script>
-let raciTasks = {{ tasks|tojson|safe }};
+    let raciTasks = {{ tasks| tojson | safe }};
+    let collabs = {{ collaborators| tojson | safe }};
 
-let currentRaciGrouping = 'sprint';
+    // Normalize collaborators data for RACI
+    collabs.forEach(c => {
+        if (c.id === 1) c.code = 'jc';
+        else if (c.id === 2) c.code = 'cl';
+        else if (c.id === 3) c.code = 'lu';
+        else c.code = c.id.toString();
 
-function getBadgeStyles(val) {
-    if (val.includes('A') && val.includes('R')) return { bg: 'rgba(99, 102, 241, 0.08)', color: '#4f46e5' };
-    if (val.includes('R')) return { bg: 'rgba(45, 45, 110, 0.06)', color: '#2d2d6e' };
-    if (val.includes('A')) return { bg: 'rgba(137, 68, 171, 0.08)', color: '#8944ab' };
-    if (val.includes('C')) return { bg: 'rgba(10, 132, 160, 0.08)', color: '#0a84a0' };
-    return { bg: 'rgba(110, 110, 115, 0.06)', color: '#6e6e73' };
-}
-
-function renderRaci() {
-    const container = document.getElementById('raci-container');
-    container.innerHTML = '';
-    
-    const groups = {};
-    raciTasks.forEach(t => {
-        const key = t[currentRaciGrouping] || "Non classé";
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(t);
+        // Fallback to initials if name is too short
+        const parts = c.name.split(' ');
+        c.initials = (parts[0][0] + (parts[1] ? parts[1][0] : parts[0][1] || '')).toUpperCase();
+        c.shortName = parts[0];
     });
 
-    const keys = Object.keys(groups).sort((a, b) => 
-        currentRaciGrouping === 'sprint' ? parseInt(a) - parseInt(b) : a.localeCompare(b)
-    );
+    let currentRaciGrouping = 'sprint';
 
-    keys.forEach(key => {
-        const title = currentRaciGrouping === 'sprint' ? `Sprint ${key}` : key;
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.style.padding = '0';
-        card.style.overflow = 'hidden';
-        card.style.marginBottom = '2rem';
-        
-        card.innerHTML = `
+    function getBadgeStyles(val) {
+        if (val === '-') return { bg: 'rgba(0,0,0,0.03)', color: 'transparent', text: '-' };
+        if (val.includes('A') && val.includes('R')) return { bg: 'rgba(99, 102, 241, 0.08)', color: '#4f46e5', text: val };
+        if (val.includes('R')) return { bg: 'rgba(45, 45, 110, 0.06)', color: '#2d2d6e', text: val };
+        if (val.includes('A')) return { bg: 'rgba(137, 68, 171, 0.08)', color: '#8944ab', text: val };
+        if (val.includes('C')) return { bg: 'rgba(10, 132, 160, 0.08)', color: '#0a84a0', text: val };
+        return { bg: 'rgba(110, 110, 115, 0.06)', color: '#6e6e73', text: val };
+    }
+
+    function renderRaci() {
+        const container = document.getElementById('raci-container');
+        container.innerHTML = '';
+
+        const groups = {};
+        raciTasks.forEach(t => {
+            const key = t[currentRaciGrouping] || "Non classé";
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(t);
+        });
+
+        const keys = Object.keys(groups).sort((a, b) =>
+            currentRaciGrouping === 'sprint' ? parseInt(a) - parseInt(b) : a.localeCompare(b)
+        );
+
+        keys.forEach(key => {
+            const title = currentRaciGrouping === 'sprint' ? `Sprint ${key}` : key;
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.padding = '0';
+            card.style.overflow = 'hidden';
+            card.style.marginBottom = '2rem';
+
+            let headersHtml = `<th style="text-align: left; width: 45%;">Livrable / Activité</th>`;
+            collabs.forEach(c => {
+                headersHtml += `<th><div style="font-weight: 800; color: var(--accent);">${c.initials}</div><div style="font-size: 0.65rem; font-weight: 400; color: var(--text-secondary);">${c.shortName}</div></th>`;
+            });
+
+            card.innerHTML = `
             <div style="padding: 1rem 1.5rem; background: var(--bg-body); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem;">
                 <i class="ph ph-${currentRaciGrouping === 'sprint' ? 'rocket-launch' : 'package'}" style="color: var(--accent-vivid);"></i>
                 <span style="font-weight: 700; font-size: 0.9rem;">${title}</span>
             </div>
-            <table style="text-align: center;">
-                <thead>
-                    <tr>
-                        <th style="text-align: left; width: 45%;">Livrable / Activité</th>
-                        <th><div style="font-weight: 800; color: var(--accent);">JC</div><div style="font-size: 0.65rem; font-weight: 400; color: var(--text-secondary);">Jean-Corentin</div></th>
-                        <th><div style="font-weight: 800; color: var(--accent);">CL</div><div style="font-size: 0.65rem; font-weight: 400; color: var(--text-secondary);">Clément</div></th>
-                        <th><div style="font-weight: 800; color: var(--accent);">LU</div><div style="font-size: 0.65rem; font-weight: 400; color: var(--text-secondary);">Ludovic</div></th>
-                    </tr>
-                </thead>
-                <tbody id="tbody-raci-${key}"></tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table style="text-align: center; min-width: 100%;">
+                    <thead>
+                        <tr>
+                            ${headersHtml}
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-raci-${key}"></tbody>
+                </table>
+            </div>
         `;
-        
-        container.appendChild(card);
-        const tbody = document.getElementById(`tbody-raci-${key}`);
-        
-        groups[key].forEach(t => {
-            const row = document.createElement('tr');
-            row.id = `row-raci-${t.id}`;
-            const r = t.raci || {};
-            row.innerHTML = `
+
+            container.appendChild(card);
+            const tbody = document.getElementById(`tbody-raci-${key}`);
+
+            groups[key].forEach(t => {
+                const row = document.createElement('tr');
+                row.id = `row-raci-${t.id}`;
+                const r = t.raci || {};
+
+                let assignedLetters = new Set();
+                let rowHtml = `
                 <td style="text-align: left; font-weight: 600;">
-                    <span class="mono text-accent" style="margin-right: 8px; font-size: 0.8rem;">${t.id}</span>
-                    <span class="task-name">${t.task}</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <span class="mono text-accent" style="margin-right: 8px; font-size: 0.8rem;">${t.id}</span>
+                            <span class="task-name">${t.task}</span>
+                        </div>
+                        <div id="raci-alert-${t.id}"></div>
+                    </div>
                 </td>
-                <td>${createBadgeHtml(t.id, 'jc', r.jc || 'I')}</td>
-                <td>${createBadgeHtml(t.id, 'cl', r.cl || 'I')}</td>
-                <td>${createBadgeHtml(t.id, 'lu', r.lu || 'I')}</td>
             `;
-            tbody.appendChild(row);
+
+                collabs.forEach(c => {
+                    const val = r[c.code] || '-';
+                    if (val.includes('R')) assignedLetters.add('R');
+                    if (val.includes('A')) assignedLetters.add('A');
+                    if (val.includes('C')) assignedLetters.add('C');
+                    if (val.includes('I')) assignedLetters.add('I');
+
+                    rowHtml += `<td>${createBadgeHtml(t.id, c.code, val)}</td>`;
+                });
+
+                row.innerHTML = rowHtml;
+                tbody.appendChild(row);
+
+                const missing = [];
+                if (!assignedLetters.has('R')) missing.push('R');
+                if (!assignedLetters.has('A')) missing.push('A');
+                if (!assignedLetters.has('C')) missing.push('C');
+                if (!assignedLetters.has('I')) missing.push('I');
+
+                const alertDiv = document.getElementById(`raci-alert-${t.id}`);
+                if (missing.length > 0) {
+                    alertDiv.innerHTML = `<i class="ph ph-warning" style="color: var(--danger); font-size: 1.1rem; cursor: help;" title="Rôles manquants sur cette tâche : ${missing.join(', ')}"></i>`;
+                } else {
+                    alertDiv.innerHTML = `<i class="ph ph-check-circle" style="color: var(--success); font-size: 1.1rem; cursor: help;" title="Tous les rôles R, A, C, I sont assignés"></i>`;
+                }
+            });
         });
-    });
-}
+    }
 
-function createBadgeHtml(taskId, personCode, val) {
-    const s = getBadgeStyles(val);
-    return `<span id="badge-${taskId}-${personCode}" class="raci-badge" 
+    function createBadgeHtml(taskId, personCode, val) {
+        const s = getBadgeStyles(val);
+        const hoverClass = val === '-' ? 'raci-badge-empty' : 'raci-badge';
+        return `<span id="badge-${taskId}-${personCode}" class="${hoverClass}" 
             style="display: inline-flex; width: 38px; height: 38px; background: ${s.bg}; color: ${s.color}; border-radius: 8px; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;"
-            onclick="openRaciModal('${taskId}', '${personCode}', '${val}')">${val}</span>`;
-}
+            onclick="openRaciModal('${taskId}', '${personCode}', '${val}')">${s.text}</span>`;
+    }
 
-function switchRaciView(view, btn) {
-    currentRaciGrouping = view;
-    document.querySelectorAll('.btn-group').forEach(b => {
-        b.style.background = 'transparent';
-        b.style.color = 'var(--text-secondary)';
-    });
-    btn.style.background = 'var(--accent)';
-    btn.style.color = 'white';
+    function switchRaciView(view, btn) {
+        currentRaciGrouping = view;
+        document.querySelectorAll('.btn-group').forEach(b => {
+            b.style.background = 'transparent';
+            b.style.color = 'var(--text-secondary)';
+        });
+        btn.style.background = 'var(--accent)';
+        btn.style.color = 'white';
+        renderRaci();
+    }
+
+    function openRaciModal(taskId, personCode, currentVal) {
+        const task = raciTasks.find(t => t.id === taskId);
+        const person = collabs.find(c => c.code === personCode);
+        const personName = person ? person.name : personCode;
+
+        document.getElementById('raciModalDesc').innerText = `${personName} sur la tâche : ${task.task}`;
+        document.getElementById('edit-raci-task-id').value = taskId;
+        document.getElementById('edit-raci-person').value = personCode;
+        document.getElementById('form-raci-val').value = currentVal;
+
+        document.getElementById('raciModal').classList.add('active');
+    }
+
+    function closeRaciModal() {
+        document.getElementById('raciModal').classList.remove('active');
+    }
+
+    function saveRaci() {
+        const taskId = document.getElementById('edit-raci-task-id').value;
+        const personCode = document.getElementById('edit-raci-person').value;
+        const newVal = document.getElementById('form-raci-val').value;
+
+        const task = raciTasks.find(t => t.id === taskId);
+        if (!task.raci) task.raci = {};
+        task.raci[personCode] = newVal;
+
+        renderRaci();
+        closeRaciModal();
+
+        fetch('/api/save-tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(raciTasks)
+        });
+    }
+
     renderRaci();
-}
-
-function openRaciModal(taskId, personCode, currentVal) {
-    const task = raciTasks.find(t => t.id === taskId);
-    const personName = personCode === 'jc' ? 'Jean-Corentin' : (personCode === 'cl' ? 'Clément' : 'Ludovic');
-    
-    document.getElementById('raciModalDesc').innerText = `${personName} sur la tâche : ${task.task}`;
-    document.getElementById('edit-raci-task-id').value = taskId;
-    document.getElementById('edit-raci-person').value = personCode;
-    document.getElementById('form-raci-val').value = currentVal;
-    
-    document.getElementById('raciModal').classList.add('active');
-}
-
-function closeRaciModal() {
-    document.getElementById('raciModal').classList.remove('active');
-}
-
-function saveRaci() {
-    const taskId = document.getElementById('edit-raci-task-id').value;
-    const personCode = document.getElementById('edit-raci-person').value;
-    const newVal = document.getElementById('form-raci-val').value;
-    
-    const task = raciTasks.find(t => t.id === taskId);
-    if (!task.raci) task.raci = {};
-    task.raci[personCode] = newVal;
-    
-    renderRaci();
-    closeRaciModal();
-
-    fetch('/api/save-tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(raciTasks)
-    });
-}
-
-renderRaci();
 </script>
 
 <style>
-.raci-badge:hover {
-    transform: scale(1.1);
-    box-shadow: var(--shadow-md);
-}
+    .raci-badge:hover {
+        transform: scale(1.1);
+        box-shadow: var(--shadow-md);
+    }
+
+    .raci-badge-empty:hover {
+        background: rgba(0, 0, 0, 0.1) !important;
+        color: var(--text-secondary) !important;
+    }
 </style>
 {% endblock %}

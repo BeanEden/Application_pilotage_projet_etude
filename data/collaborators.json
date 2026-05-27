@@ -1,29 +1,46 @@
 [
     {
+        "category": "Cadre",
+        "charge_rate": 0.45,
         "id": 1,
         "name": "Jean-Corentin LOIRAT",
         "role": "Project Manager / Data Architect",
         "salary": 55000,
-        "category": "Cadre",
-        "charge_rate": 0.45,
-        "tjm_applied": 450
+        "tjm_applied": 500,
+        "weather": "sunny",
+        "weather_history": {}
     },
     {
+        "category": "Cadre",
+        "charge_rate": 0.45,
         "id": 2,
         "name": "Clément METOIS",
         "role": "Data Engineer / DevOps",
         "salary": 48000,
-        "category": "Cadre",
-        "charge_rate": 0.45,
-        "tjm_applied": 400
+        "tjm_applied": 400,
+        "weather_history": {}
     },
     {
+        "category": "Cadre",
+        "charge_rate": 0.45,
         "id": 3,
         "name": "Ludovic PICARD",
         "role": "Data Scientist / Power BI Expert",
         "salary": 45000,
-        "category": "Cadre",
-        "charge_rate": 0.45,
-        "tjm_applied": 350
+        "tjm_applied": 400,
+        "weather": "rainy",
+        "weather_history": {
+            "0": "rainy"
+        }
+    },
+    {
+        "category": "Externe",
+        "charge_rate": 0,
+        "id": "sh_1779869800150",
+        "name": "Frank ORAGA",
+        "role": "Product Owner",
+        "salary": 0,
+        "tjm_applied": 0,
+        "weather_history": {}
     }
 ]

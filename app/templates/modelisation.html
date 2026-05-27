@@ -1,0 +1,701 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Modélisation des Tables</h1>
+        <p class="subtitle">Schémas de données, tables et relations ou import d'images du modèle de données.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <button class="btn btn-primary" onclick="openModModal()">
+            <i class="ph ph-plus"></i> Nouveau Modèle
+        </button>
+    </div>
+</div>
+
+<!-- Import Mermaid -->
+<script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    window.mermaid = mermaid;
+    mermaid.initialize({ startOnLoad: false, theme: 'default', fontFamily: 'Inter, sans-serif' });
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        data.forEach(mod => {
+            if (document.getElementById('mermaid-' + mod.id)) {
+                updateFilters(mod.id);
+            }
+        });
+    });
+</script>
+
+<div id="models-list">
+    {% for mod in modelisations %}
+    <div class="arch-section card" id="mod-{{ mod.id }}" style="margin-bottom: 2rem;">
+        <div class="arch-header">
+            <div class="arch-title-group">
+                <i class="ph ph-database"></i>
+                <h2 class="editable-title">{{ mod.title }}</h2>
+            </div>
+            <div class="arch-controls">
+                <div class="zoom-controls">
+                    <button class="zoom-btn" onclick="adjustZoom('{{ mod.id }}', -0.1)" title="Dézoomer"><i class="ph ph-minus"></i></button>
+                    <span class="zoom-level" id="zoom-val-{{ mod.id }}">100%</span>
+                    <button class="zoom-btn" onclick="adjustZoom('{{ mod.id }}', 0.1)" title="Zoomer"><i class="ph ph-plus"></i></button>
+                    <button class="zoom-btn" onclick="resetZoom('{{ mod.id }}')" title="Réinitialiser"><i class="ph ph-arrows-out"></i></button>
+                </div>
+                <div class="divider"></div>
+                <button class="btn btn-secondary btn-sm" onclick="openModModal('{{ mod.id }}')">
+                    <i class="ph ph-pencil-simple"></i> Modifier
+                </button>
+                <button class="btn-icon text-danger" onclick="deleteMod('{{ mod.id }}')" title="Supprimer">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div style="padding: 1.5rem;">
+            <p>{{ mod.description }}</p>
+            
+            {% if mod.images and mod.images|length > 0 %}
+            <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem; color: var(--accent);">Images du modèle</h3>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                {% for img in mod.images %}
+                <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: 100%; max-width: 1000px; background: var(--bg-body); padding: 1rem; text-align: center;">
+                    <a href="{{ img }}" target="_blank" title="Ouvrir l'image en grand">
+                        <img src="{{ img }}" style="max-width: 100%; height: auto; max-height: 700px; object-fit: contain; cursor: zoom-in; border-radius: 4px;">
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if mod.tables and mod.tables|length > 0 %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 1rem;">
+                <h3 style="font-size: 1.1rem; color: var(--accent); margin: 0;">Diagramme Entité-Relation</h3>
+                <div style="display: flex; gap: 1rem; align-items: center; font-size: 0.9rem; background: var(--bg-card); padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 6px;">
+                    <span style="font-weight: 600; color: var(--text-secondary);">Filtres :</span>
+                    <label style="cursor: pointer;"><input type="checkbox" checked onchange="updateFilters('{{ mod.id }}')" id="filter-fact-{{ mod.id }}"> Fait</label>
+                    <label style="cursor: pointer;"><input type="checkbox" checked onchange="updateFilters('{{ mod.id }}')" id="filter-dimension-{{ mod.id }}"> Dimension</label>
+                    <label style="cursor: pointer;"><input type="checkbox" checked onchange="updateFilters('{{ mod.id }}')" id="filter-aggregate-{{ mod.id }}"> Agrégat</label>
+                    <label style="cursor: pointer;"><input type="checkbox" checked onchange="updateFilters('{{ mod.id }}')" id="filter-none-{{ mod.id }}"> Autre</label>
+                </div>
+            </div>
+            
+            <div class="card scroll-container" style="background: white; overflow: auto; padding: 2rem; border: 1px solid var(--border); max-height: 800px; position: relative;">
+                <div id="container-{{ mod.id }}" style="transform: scale(1); transform-origin: top left; transition: transform 0.2s ease-out; width: max-content; min-width: 100%;">
+                    <div id="mermaid-{{ mod.id }}" class="mermaid" style="display: flex; justify-content: center; min-width: 100%;"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state" style="text-align: center; padding: 4rem; color: var(--text-secondary); background: var(--bg-card); border: 1px dashed var(--border); border-radius: 12px;">
+        <i class="ph ph-database" style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent-vivid);"></i>
+        <h3>Aucun modèle défini</h3>
+        <p>Commencez par ajouter un nouveau modèle de données.</p>
+        <button class="btn btn-primary" onclick="openModModal()" style="margin-top: 1rem;">Nouveau Modèle</button>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Creation/Edition Modèle -->
+<div id="modModal" class="modal">
+    <div class="modal-content" style="max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+        <h2 id="modalTitle">Nouveau Modèle</h2>
+        <form id="modForm">
+            <input type="hidden" id="modId">
+            
+            <div class="form-group">
+                <label for="title">Titre du Modèle</label>
+                <input type="text" id="title" class="form-control" placeholder="ex: Schéma Étoile - Ventes" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" class="form-control" rows="3" placeholder="Description du modèle..."></textarea>
+            </div>
+
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                <h3 style="margin-bottom: 1rem;">Option 1: Uploader un schéma (Image)</h3>
+                <div class="form-group">
+                    <div id="dropZone" class="upload-zone" style="border: 2px dashed var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; cursor: pointer; background: var(--bg-body);">
+                        <i class="ph ph-cloud-arrow-up" style="font-size: 2rem;"></i>
+                        <p>Glissez-déposez ou cliquez ici pour ajouter des images du schéma</p>
+                        <input type="file" id="fileInput" hidden accept="image/*" multiple>
+                    </div>
+                    <div id="imagesPreviewList" style="display: flex; gap: 8px; overflow-x: auto; margin-top: 1rem;"></div>
+                    <div id="uploadStatus" style="font-size: 0.8rem; margin-top: 0.4rem;"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>Option 2: Définir les tables manuelles</h3>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addTableUI()">
+                        <i class="ph ph-plus"></i> Ajouter une table
+                    </button>
+                </div>
+                <div id="tablesContainer" style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- JS tables injected here -->
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>Option 3: Définir les relations</h3>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addRelUI()">
+                        <i class="ph ph-plus"></i> Ajouter une relation
+                    </button>
+                </div>
+                <div id="relsContainer" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <!-- JS rels injected here -->
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3>Option 4: Importer via JSON</h3>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="importJsonSchema()">
+                        <i class="ph ph-download-simple"></i> Importer
+                    </button>
+                </div>
+                <textarea id="jsonImport" class="form-control" rows="6" placeholder='Collez ici uniquement les clés "tables" et "relationships" au format JSON, ex: { "tables": [...], "relationships": [...] }'></textarea>
+                <div id="jsonImportStatus" style="font-size: 0.8rem; margin-top: 0.4rem;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modModal')">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.mermaid {
+    min-width: 1200px;
+    width: max-content;
+}
+.mermaid svg {
+    max-width: none !important;
+    height: auto !important;
+}
+.arch-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2px;
+}
+.zoom-btn {
+    background: transparent;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    border-radius: 6px;
+}
+.zoom-btn:hover {
+    background: var(--bg-body);
+    color: var(--accent-vivid);
+}
+.zoom-level {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0 8px;
+    min-width: 50px;
+    text-align: center;
+}
+.divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+}
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(29, 29, 31, 0.6);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+}
+.modal.active { display: flex; }
+.arch-header {
+    padding: 1.25rem 2rem;
+    background: var(--bg-body);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.arch-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.arch-title-group i {
+    font-size: 1.5rem;
+    color: var(--accent-vivid);
+}
+.arch-title-group h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+</style>
+
+<script>
+let data = {{ modelisations|tojson }};
+let currentImages = [];
+let currentTables = [];
+let currentRels = [];
+
+const zooms = {};
+
+function adjustZoom(modId, delta) {
+    if (!zooms[modId]) zooms[modId] = 1;
+    zooms[modId] = Math.max(0.3, Math.min(3, zooms[modId] + delta));
+    applyZoom(modId);
+}
+
+function resetZoom(modId) {
+    zooms[modId] = 1;
+    applyZoom(modId);
+}
+
+function applyZoom(modId) {
+    const container = document.getElementById('container-' + modId);
+    const zoomVal = document.getElementById('zoom-val-' + modId);
+    if (container) {
+        container.style.transform = `scale(${zooms[modId]})`;
+        zoomVal.innerText = Math.round(zooms[modId] * 100) + '%';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.scroll-container').forEach(ele => {
+        let pos = { top: 0, left: 0, x: 0, y: 0 };
+        const mouseDownHandler = function(e) {
+            if (e.target.closest('button') || e.target.closest('a')) return;
+            pos = { left: ele.scrollLeft, top: ele.scrollTop, x: e.clientX, y: e.clientY };
+            ele.style.cursor = 'grabbing';
+            ele.style.userSelect = 'none';
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+        };
+        const mouseMoveHandler = function(e) {
+            const dx = e.clientX - pos.x;
+            const dy = e.clientY - pos.y;
+            ele.scrollTop = pos.top - dy;
+            ele.scrollLeft = pos.left - dx;
+        };
+        const mouseUpHandler = function() {
+            document.removeEventListener('mousemove', mouseMoveHandler);
+            document.removeEventListener('mouseup', mouseUpHandler);
+            ele.style.cursor = 'grab';
+            ele.style.userSelect = '';
+        };
+        ele.style.cursor = 'grab';
+        ele.addEventListener('mousedown', mouseDownHandler);
+    });
+});
+
+async function updateFilters(modId) {
+    if (!window.mermaid) {
+        // Retry if mermaid module not loaded yet
+        setTimeout(() => updateFilters(modId), 100);
+        return;
+    }
+    
+    const showFact = document.getElementById('filter-fact-' + modId).checked;
+    const showDim = document.getElementById('filter-dimension-' + modId).checked;
+    const showAgg = document.getElementById('filter-aggregate-' + modId).checked;
+    const showNone = document.getElementById('filter-none-' + modId).checked;
+    
+    const mod = data.find(m => m.id === modId);
+    if(!mod || !mod.tables) return;
+    
+    const filteredTables = mod.tables.filter(t => {
+        const cat = t.category || 'none';
+        if (cat === 'fact' && showFact) return true;
+        if (cat === 'dimension' && showDim) return true;
+        if (cat === 'aggregate' && showAgg) return true;
+        if (cat === 'none' && showNone) return true;
+        return false;
+    });
+    
+    const tableNames = new Set(filteredTables.map(t => t.name));
+    
+    const filteredRels = (mod.relationships || []).filter(r => {
+        return tableNames.has(r.from_table) && tableNames.has(r.to_table);
+    });
+    
+    let mermaidStr = "erDiagram\n";
+    filteredTables.forEach(t => {
+        const safeName = t.name.replace(/[\s-]/g, "_");
+        mermaidStr += `    ${safeName} {\n`;
+        t.columns.forEach(c => {
+            const safeType = c.type.replace(/[\s(),]/g, "_");
+            const safeCol = c.name.replace(/[\s]/g, "_");
+            const pk = c.is_pk ? "PK" : "";
+            mermaidStr += `        ${safeType} ${safeCol} ${pk}\n`;
+        });
+        mermaidStr += `    }\n`;
+    });
+    
+    filteredRels.forEach(r => {
+        let relType = "||--o{";
+        if (r.type === '1:1') relType = "||--||";
+        if (r.type === 'N:N') relType = "}o--o{";
+        const safeFrom = r.from_table.replace(/[\s-]/g, "_");
+        const safeTo = r.to_table.replace(/[\s-]/g, "_");
+        const fromCol = r.from_col || "N/A";
+        const toCol = r.to_col || "N/A";
+        mermaidStr += `    ${safeFrom} ${relType} ${safeTo} : "${fromCol} -> ${toCol}"\n`;
+    });
+    
+    const container = document.getElementById('mermaid-' + modId);
+    try {
+        if(filteredTables.length === 0) {
+            container.innerHTML = "<p style='padding:2rem;text-align:center;color:var(--text-secondary);'>Aucune table à afficher avec ces filtres.</p>";
+            return;
+        }
+        const { svg } = await window.mermaid.render('graphDiv-' + modId.replace(/[\s_]/g, ""), mermaidStr);
+        container.innerHTML = svg;
+    } catch(err) {
+        console.error(err);
+        container.innerHTML = "<p style='color:red;'>Erreur de rendu du diagramme.</p>";
+    }
+}
+
+function openModModal(modId = null) {
+    const modal = document.getElementById('modModal');
+    const form = document.getElementById('modForm');
+    const titleEl = document.getElementById('modalTitle');
+    
+    form.reset();
+    currentImages = [];
+    currentTables = [];
+    currentRels = [];
+    document.getElementById('tablesContainer').innerHTML = '';
+    document.getElementById('relsContainer').innerHTML = '';
+    
+    if (modId) {
+        const mod = data.find(m => m.id === modId);
+        if (mod) {
+            titleEl.innerText = "Modifier le modèle";
+            document.getElementById('modId').value = mod.id;
+            document.getElementById('title').value = mod.title || '';
+            document.getElementById('description').value = mod.description || '';
+            
+            if (mod.images) currentImages = [...mod.images];
+            if (mod.tables) {
+                currentTables = JSON.parse(JSON.stringify(mod.tables));
+                currentTables.forEach((t, tIdx) => renderTableUI(t, tIdx));
+            }
+            if (mod.relationships) {
+                currentRels = JSON.parse(JSON.stringify(mod.relationships));
+                renderRelsAll();
+            }
+        }
+    } else {
+        titleEl.innerText = "Nouveau Modèle";
+        document.getElementById('modId').value = '';
+    }
+    
+    renderImagePreviews();
+    modal.classList.add('active');
+    setupUpload();
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+function addTableUI() {
+    currentTables.push({ name: 'Nouvelle_Table', category: 'none', columns: [] });
+    document.getElementById('tablesContainer').innerHTML = '';
+    currentTables.forEach((t, idx) => renderTableUI(t, idx));
+}
+
+function renderTableUI(table, tIdx) {
+    const container = document.getElementById('tablesContainer');
+    
+    const tableDiv = document.createElement('div');
+    tableDiv.className = 'card';
+    tableDiv.style.border = '1px solid var(--border)';
+    tableDiv.innerHTML = `
+        <div style="padding: 1rem; background: var(--bg-body); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" class="form-control" value="${table.name}" onchange="updateTableName(${tIdx}, this.value)" style="width: 200px; font-weight: 700;">
+                <select class="form-control" onchange="currentTables[${tIdx}].category = this.value" style="width: 130px;">
+                    <option value="none" ${table.category === 'none' || !table.category ? 'selected' : ''}>-- Catégorie --</option>
+                    <option value="fact" ${table.category === 'fact' ? 'selected' : ''}>Fait</option>
+                    <option value="dimension" ${table.category === 'dimension' ? 'selected' : ''}>Dimension</option>
+                    <option value="aggregate" ${table.category === 'aggregate' ? 'selected' : ''}>Agrégat</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="addColumnUI(${tIdx})"><i class="ph ph-plus"></i> Colonne</button>
+            <button type="button" class="btn-icon text-danger" onclick="removeTableUI(${tIdx})"><i class="ph ph-trash"></i></button>
+        </div>
+        <div id="colsContainer-${tIdx}" style="padding: 1rem; flex-grow: 1; display: flex; flex-direction: column; gap: 0.5rem;">
+        </div>
+    `;
+    container.appendChild(tableDiv);
+    
+    table.columns.forEach((c, cIdx) => renderColumnUI(tIdx, cIdx));
+}
+
+function updateTableName(tIdx, val) {
+    if(currentTables[tIdx]) {
+        const oldName = currentTables[tIdx].name;
+        currentTables[tIdx].name = val;
+        currentRels.forEach(r => {
+            if(r.from_table === oldName) r.from_table = val;
+            if(r.to_table === oldName) r.to_table = val;
+        });
+        renderRelsAll();
+    }
+}
+
+function addColumnUI(tIdx) {
+    currentTables[tIdx].columns.push({ name: 'nouvelle_colonne', type: 'VARCHAR', is_pk: false });
+    // Re-render entirely to maintain correct indices
+    document.getElementById('tablesContainer').innerHTML = '';
+    currentTables.forEach((t, idx) => renderTableUI(t, idx));
+    renderRelsAll();
+}
+
+function renderColumnUI(tIdx, cIdx) {
+    const col = currentTables[tIdx].columns[cIdx];
+    const cContainer = document.getElementById(`colsContainer-${tIdx}`);
+    const div = document.createElement('div');
+    div.style.display = 'flex';
+    div.style.gap = '0.5rem';
+    div.style.alignItems = 'center';
+    
+    div.innerHTML = `
+        <input type="text" class="form-control" value="${col.name}" onchange="currentTables[${tIdx}].columns[${cIdx}].name = this.value" placeholder="Nom">
+        <input type="text" class="form-control" value="${col.type}" onchange="currentTables[${tIdx}].columns[${cIdx}].type = this.value" placeholder="Type (INT, VARCHAR...)">
+        <label style="display:flex; align-items:center; gap: 0.25rem; font-size: 0.8rem; white-space:nowrap;">
+            <input type="checkbox" ${col.is_pk ? 'checked' : ''} onchange="currentTables[${tIdx}].columns[${cIdx}].is_pk = this.checked"> PK
+        </label>
+        <button type="button" class="btn-icon text-danger" onclick="removeColumnUI(${tIdx}, ${cIdx})"><i class="ph ph-x"></i></button>
+    `;
+    cContainer.appendChild(div);
+}
+
+function removeTableUI(tIdx) {
+    const tableName = currentTables[tIdx].name;
+    currentTables.splice(tIdx, 1);
+    currentRels = currentRels.filter(r => r.from_table !== tableName && r.to_table !== tableName);
+    
+    document.getElementById('tablesContainer').innerHTML = '';
+    currentTables.forEach((t, idx) => renderTableUI(t, idx));
+    renderRelsAll();
+}
+
+function removeColumnUI(tIdx, cIdx) {
+    currentTables[tIdx].columns.splice(cIdx, 1);
+    document.getElementById('tablesContainer').innerHTML = '';
+    currentTables.forEach((t, idx) => renderTableUI(t, idx));
+}
+
+function addRelUI() {
+    currentRels.push({ from_table: '', from_col: '', type: '1:N', to_table: '', to_col: '' });
+    renderRelsAll();
+}
+
+function renderRelsAll() {
+    document.getElementById('relsContainer').innerHTML = '';
+    currentRels.forEach((r, idx) => renderRelUI(r, idx));
+}
+
+function renderRelUI(rel, rIdx) {
+    const container = document.getElementById('relsContainer');
+    const div = document.createElement('div');
+    div.style.display = 'flex';
+    div.style.gap = '0.5rem';
+    div.style.alignItems = 'center';
+
+    div.innerHTML = `
+        <select class="form-control" onchange="currentRels[${rIdx}].from_table = this.value" style="width: 140px;">
+            <option value="">Table 1...</option>
+            ${currentTables.map(t => `<option value="${t.name}" ${t.name === rel.from_table ? 'selected' : ''}>${t.name}</option>`).join('')}
+        </select>
+        <input type="text" class="form-control" value="${rel.from_col}" onchange="currentRels[${rIdx}].from_col = this.value" placeholder="Colonne" style="width: 120px;">
+        
+        <select class="form-control" onchange="currentRels[${rIdx}].type = this.value" style="width: 80px;">
+            <option value="1:1" ${rel.type === '1:1' ? 'selected' : ''}>1:1</option>
+            <option value="1:N" ${rel.type === '1:N' ? 'selected' : ''}>1:N</option>
+            <option value="N:N" ${rel.type === 'N:N' ? 'selected' : ''}>N:N</option>
+        </select>
+        
+        <select class="form-control" onchange="currentRels[${rIdx}].to_table = this.value" style="width: 140px;">
+            <option value="">Table 2...</option>
+            ${currentTables.map(t => `<option value="${t.name}" ${t.name === rel.to_table ? 'selected' : ''}>${t.name}</option>`).join('')}
+        </select>
+        <input type="text" class="form-control" value="${rel.to_col}" onchange="currentRels[${rIdx}].to_col = this.value" placeholder="Colonne" style="width: 120px;">
+        
+        <button type="button" class="btn-icon text-danger" onclick="removeRelUI(${rIdx})"><i class="ph ph-x"></i></button>
+    `;
+    container.appendChild(div);
+}
+
+function removeRelUI(rIdx) {
+    currentRels.splice(rIdx, 1);
+    renderRelsAll();
+}
+
+function renderImagePreviews() {
+    const list = document.getElementById('imagesPreviewList');
+    list.innerHTML = '';
+    currentImages.forEach((url, idx) => {
+        list.innerHTML += `
+            <div style="position: relative; flex: 0 0 auto; width: 100px; height: 80px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--bg-body); display: flex; align-items: center; justify-content: center;">
+                <img src="${url}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                <button type="button" class="btn-icon text-danger" onclick="removeImageAt(${idx})" style="position: absolute; top: 2px; right: 2px; background: rgba(255,255,255,0.8); border-radius: 50%; padding: 2px;">
+                    <i class="ph ph-x" style="font-size: 0.8rem;"></i>
+                </button>
+            </div>
+        `;
+    });
+}
+
+function importJsonSchema() {
+    const jsonStr = document.getElementById('jsonImport').value;
+    const statusEl = document.getElementById('jsonImportStatus');
+    if (!jsonStr.trim()) {
+        statusEl.innerText = "Veuillez coller du JSON.";
+        statusEl.style.color = "#f59e0b"; // Warning color
+        return;
+    }
+    try {
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.tables && Array.isArray(parsed.tables)) {
+            currentTables = parsed.tables.map(t => {
+                if (t.type && !t.category) {
+                    if (t.type.toLowerCase().includes('fact')) t.category = 'fact';
+                    else if (t.type.toLowerCase().includes('dimension')) t.category = 'dimension';
+                    else if (t.type.toLowerCase().includes('aggregate')) t.category = 'aggregate';
+                    else t.category = 'none';
+                }
+                return t;
+            });
+        }
+        if (parsed.relationships && Array.isArray(parsed.relationships)) {
+            currentRels = parsed.relationships;
+        }
+        // Force re-render of UI
+        document.getElementById('tablesContainer').innerHTML = '';
+        currentTables.forEach((t, tIdx) => renderTableUI(t, tIdx));
+        renderRelsAll();
+        
+        statusEl.innerText = "Import réussi ! L'interface a été mise à jour.";
+        statusEl.style.color = "var(--success)";
+        setTimeout(() => statusEl.innerText = "", 3000);
+        document.getElementById('jsonImport').value = '';
+    } catch (e) {
+        statusEl.innerText = "Erreur de syntaxe JSON. Veuillez vérifier le format.";
+        statusEl.style.color = "#ef4444"; // Danger color
+    }
+}
+
+function removeImageAt(idx) {
+    currentImages.splice(idx, 1);
+    renderImagePreviews();
+}
+
+function setupUpload() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('uploadStatus');
+
+    dropZone.onclick = () => fileInput.click();
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent-vivid)'; };
+    dropZone.ondragleave = () => dropZone.style.borderColor = 'var(--border)';
+    dropZone.ondrop = (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--border)';
+        if (e.dataTransfer.files.length) {
+            Array.from(e.dataTransfer.files).forEach(f => handleUpload(f));
+        }
+    };
+    fileInput.onchange = () => { 
+        if (fileInput.files.length) {
+            Array.from(fileInput.files).forEach(f => handleUpload(f));
+            fileInput.value = '';
+        }
+    };
+
+    async function handleUpload(file) {
+        status.innerText = "Téléchargement...";
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const response = await fetch('/api/upload-image', { method: 'POST', body: formData });
+            const result = await response.json();
+            if (result.status === 'success') {
+                currentImages.push(result.url);
+                renderImagePreviews();
+                status.innerText = "OK !";
+                status.style.color = "var(--success)";
+                setTimeout(() => status.innerText = "", 2000);
+            }
+        } catch (e) { status.innerText = "Erreur"; }
+    }
+}
+
+document.getElementById('modForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const modId = document.getElementById('modId').value || 'mod_' + Date.now();
+    
+    const newMod = {
+        id: modId,
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        images: currentImages,
+        tables: currentTables,
+        relationships: currentRels
+    };
+    
+    const index = data.findIndex(m => m.id === modId);
+    if (index > -1) data[index] = newMod;
+    else data.push(newMod);
+    
+    await saveAll();
+};
+
+async function deleteMod(modId) {
+    if (!confirm('Supprimer ce modèle ?')) return;
+    data = data.filter(m => m.id !== modId);
+    await saveAll();
+}
+
+async function saveAll() {
+    try {
+        const response = await fetch('/api/save-modelisation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (response.ok) window.location.reload();
+        else alert('Erreur de sauvegarde');
+    } catch (error) {
+        alert('Erreur réseau');
+    }
+}
+</script>
+{% endblock %}

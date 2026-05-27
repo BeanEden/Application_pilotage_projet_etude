@@ -84,6 +84,25 @@
     </div>
 </div>
 
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 style="margin-bottom: 1.5rem; font-size: 1rem;">Météo de l'Équipe</h3>
+    <div id="team-weather" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <!-- Injected by JS -->
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <h3 style="margin: 0; font-size: 1rem;">Corrélation Météo & Charge</h3>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Impact de la surcharge de travail et de l'éparpillement des sujets sur le moral.</div>
+        </div>
+        <select id="collab-chart-filter" class="form-control" style="width: auto; padding: 6px 12px;" onchange="updateWeatherChart()">
+        </select>
+    </div>
+    <div style="height: 300px;"><canvas id="collab-weather-chart"></canvas></div>
+</div>
+
 <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem;">
     <div class="card" style="padding: 0; overflow: hidden;">
         <div style="padding: 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
@@ -161,6 +180,8 @@ function updateMonitoring() {
     const groupKey = document.getElementById('group-suivi').value;
     document.getElementById('current-date-display').innerText = weeks[weekIdx];
     document.getElementById('slider-week-label').innerText = `Semaine ${weekIdx + 1}`;
+    
+    renderWeather(); // Update weather for selected week
 
     let totalTasksCount = rawTasks.length;
     let totalWorkDays = 0;
@@ -491,6 +512,223 @@ function createTable(tasks) {
     return table;
 }
 
+const weathers = [
+    { id: 'sunny', icon: '☀️', label: 'Super' },
+    { id: 'cloudy', icon: '⛅', label: 'Moyen' },
+    { id: 'rainy', icon: '🌧️', label: 'Difficile' },
+    { id: 'stormy', icon: '⛈️', label: 'Critique' }
+];
+
+function computeAutoWeather(collab, weekIdx) {
+    let wWork = 0;
+    let wCount = 0;
+    rawTasks.forEach(t => {
+        if ((t.assignees || []).includes(collab.name)) {
+            const dDays = getTaskDays(t);
+            const dWeeks = Math.ceil(dDays / 5);
+            const costPerWeek = dDays / dWeeks;
+            const startW = t.start_week || 0;
+            if (weekIdx >= startW && weekIdx < startW + dWeeks) {
+                wWork += costPerWeek;
+                wCount += 1;
+            }
+        }
+    });
+    
+    // Stress Score: 1 JH = 1 pt, 1 Task = 0.5 pt
+    const stress = wWork + (wCount * 0.5);
+    
+    if (stress > 6) return 'stormy';
+    if (stress > 4.5) return 'rainy';
+    if (stress > 3) return 'cloudy';
+    return 'sunny';
+}
+
+function renderWeather() {
+    const container = document.getElementById('team-weather');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    const slider = document.getElementById('date-slider');
+    const weekIdx = slider ? parseInt(slider.value) : 0;
+    
+    collaborators.forEach((c, idx) => {
+        if (!c.weather_history) c.weather_history = {};
+        
+        let currentW = c.weather_history[weekIdx];
+        if (!currentW) {
+            currentW = computeAutoWeather(c, weekIdx);
+        }
+        
+        const initials = c.name ? c.name.substring(0, 2).toUpperCase() : '??';
+        
+        let html = `
+            <div style="background: var(--bg-body); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; flex: 1; min-width: 220px;">
+                <div style="font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="width: 24px; height: 24px; background: var(--accent-glow); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;">${initials}</div>
+                    ${c.name}
+                </div>
+                <div style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Météo Semaine ${weekIdx + 1}</div>
+                <div style="display: flex; justify-content: space-between; gap: 0.5rem;">
+        `;
+        weathers.forEach(w => {
+            const isSel = w.id === currentW;
+            const style = isSel ? 'background: white; transform: scale(1.1); box-shadow: 0 2px 5px rgba(0,0,0,0.1);' : 'filter: grayscale(1); opacity: 0.4;';
+            html += `
+                    <div style="font-size: 1.5rem; cursor: pointer; border-radius: 8px; padding: 4px; transition: all 0.2s; line-height: 1; ${style}" 
+                         title="${w.label}" onclick="setWeather(${idx}, '${w.id}', ${weekIdx})">
+                        ${w.icon}
+                    </div>
+            `;
+        });
+        html += `</div></div>`;
+        container.innerHTML += html;
+    });
+}
+
+function setWeather(idx, weatherId, weekIdx) {
+    if (!collaborators[idx].weather_history) collaborators[idx].weather_history = {};
+    collaborators[idx].weather_history[weekIdx] = weatherId;
+    
+    // Also save legacy single value for backward compatibility just in case
+    collaborators[idx].weather = weatherId;
+    
+    renderWeather();
+    updateWeatherChart();
+    
+    fetch('/api/save-collaborators', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collaborators)
+    });
+}
+
+let collabWeatherChart = null;
+
+function initCollabFilter() {
+    const filter = document.getElementById('collab-chart-filter');
+    if (!filter) return;
+    filter.innerHTML = '';
+    collaborators.forEach((c, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = c.name;
+        filter.appendChild(opt);
+    });
+    
+    if (collaborators.length > 0) {
+        updateWeatherChart();
+    }
+}
+
+function updateWeatherChart() {
+    const filter = document.getElementById('collab-chart-filter');
+    if (!filter) return;
+    const idx = parseInt(filter.value);
+    const collab = collaborators[idx];
+    if (!collab) return;
+
+    let weatherData = Array(weeks.length).fill(null);
+    let workloadData = Array(weeks.length).fill(0);
+    let taskCountData = Array(weeks.length).fill(0);
+    
+    rawTasks.forEach(t => {
+        if ((t.assignees || []).includes(collab.name)) {
+            const dDays = getTaskDays(t);
+            const dWeeks = Math.ceil(dDays / 5);
+            const costPerWeek = dDays / dWeeks; // in JH
+            
+            for (let i = 0; i < dWeeks; i++) {
+                const w = (t.start_week || 0) + i;
+                if (w < weeks.length) {
+                    workloadData[w] += costPerWeek;
+                    taskCountData[w] += 1;
+                }
+            }
+        }
+    });
+
+    const weatherMap = { 'sunny': 100, 'cloudy': 66, 'rainy': 33, 'stormy': 0 };
+    
+    for (let w = 0; w < weeks.length; w++) {
+        let wId = null;
+        if (collab.weather_history && collab.weather_history[w]) {
+            wId = collab.weather_history[w];
+        } else {
+            wId = computeAutoWeather(collab, w);
+        }
+        weatherData[w] = weatherMap[wId];
+    }
+    
+    if (collabWeatherChart) collabWeatherChart.destroy();
+    
+    collabWeatherChart = new Chart(document.getElementById('collab-weather-chart'), {
+        type: 'line',
+        data: {
+            labels: weeks,
+            datasets: [
+                {
+                    label: 'Charge (JH)',
+                    data: workloadData,
+                    borderColor: '#4f46e5',
+                    backgroundColor: '#4f46e5',
+                    yAxisID: 'y-workload',
+                    type: 'bar',
+                    barPercentage: 0.5,
+                    order: 3
+                },
+                {
+                    label: 'Sujets (Nb Tâches)',
+                    data: taskCountData,
+                    borderColor: '#ec4899',
+                    backgroundColor: 'transparent',
+                    yAxisID: 'y-workload',
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    tension: 0.3,
+                    order: 2
+                },
+                {
+                    label: 'Météo (%)',
+                    data: weatherData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    yAxisID: 'y-weather',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { datalabels: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                'y-weather': {
+                    type: 'linear',
+                    position: 'left',
+                    min: 0,
+                    max: 100,
+                    title: { display: true, text: 'Moral / Énergie (%)' },
+                    grid: { color: '#f2f2f7' },
+                    ticks: { callback: function(value) { return value + '%'; } }
+                },
+                'y-workload': {
+                    type: 'linear',
+                    position: 'right',
+                    min: 0,
+                    title: { display: true, text: 'Charge (JH) & Nb Tâches' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// Initial render handled by updateMonitoring()
+initCollabFilter();
 updateMonitoring();
 </script>
 

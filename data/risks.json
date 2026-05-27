@@ -1,0 +1,62 @@
+[
+    {
+        "action": "Mise en place d'un cache local et monitoring.",
+        "criticality": "Élevée",
+        "financial_impact": "500",
+        "id": "r1",
+        "impact": "Fort",
+        "name": "Latence API Fabric",
+        "probability": "Moyenne",
+        "provision": true
+    },
+    {
+        "action": "Stack alternative Docker/Airflow prête en fallback.",
+        "criticality": "Critique",
+        "financial_impact": "1500",
+        "id": "r2",
+        "impact": "Critique",
+        "name": "Disponibilité Licence Fabric F64",
+        "probability": "Haute",
+        "provision": true
+    },
+    {
+        "action": "Itérations de validation avec le rapport Livrable B.",
+        "criticality": "Modérée",
+        "financial_impact": "100",
+        "id": "r3",
+        "impact": "Moyen",
+        "name": "Complexité modélisation Star Schema",
+        "probability": "Moyenne",
+        "provision": true
+    },
+    {
+        "action": "Matrice RACI claire et suivi Gantt hebdomadaire.",
+        "criticality": "Faible",
+        "financial_impact": "500",
+        "id": "r4",
+        "impact": "Moyen",
+        "name": "Charge équipe insuffisante",
+        "probability": "Basse",
+        "provision": false
+    },
+    {
+        "action": "",
+        "criticality": "Faible",
+        "financial_impact": "2000",
+        "id": "r_1779871064051",
+        "impact": "Faible",
+        "name": "Enveloppe tous risques",
+        "probability": "Basse",
+        "provision": true
+    },
+    {
+        "action": "Faire",
+        "criticality": "Critique",
+        "financial_impact": "5000",
+        "id": "r_1779871097234",
+        "impact": "Critique",
+        "name": "Nouvelle tâche client",
+        "probability": "Haute",
+        "provision": true
+    }
+]
