@@ -8,11 +8,11 @@
         "type": "Tâche supplémentaire"
     },
     {
-        "cost": 0,
+        "cost": 400,
         "date": "2026-05-20",
-        "description": "Départ anticipé de Jean en congés (3 jours)",
+        "description": "Départ anticipé de JC en congés (3 jours)",
         "id": 2,
-        "saving": 450,
+        "saving": 0,
         "type": "RH - Congés"
     },
     {
@@ -24,11 +24,11 @@
         "type": "Coût satellite"
     },
     {
-        "id": 1779787138253,
-        "date": "2026-05-26",
-        "type": "Tâche supplémentaire",
-        "description": "Ajout de formats d'entrée",
-        "cost": 500,
-        "saving": 0
+        "id": 1779875553192,
+        "date": "2026-05-27",
+        "type": "Autre",
+        "description": "Réduction sur les licences du MCP",
+        "cost": 0,
+        "saving": 100
     }
 ]

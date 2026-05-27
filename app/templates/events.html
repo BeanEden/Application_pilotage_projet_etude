@@ -59,6 +59,7 @@
                         {{ "{:,.0f}".format(event.saving).replace(',', ' ') if event.saving > 0 else "-" }}
                     </td>
                     <td style="text-align: center;">
+                        <i class="ph ph-pencil-simple text-accent" style="cursor: pointer; margin-right: 0.5rem;" onclick="editEvent({{ loop.index0 }})"></i>
                         <i class="ph ph-trash remove-btn" onclick="deleteEvent({{ loop.index0 }})"></i>
                     </td>
                 </tr>
@@ -79,7 +80,7 @@
 <div id="eventModal" class="modal">
     <div class="modal-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-            <h2>Ajouter un évènement</h2>
+            <h2 id="modalTitle">Ajouter un évènement</h2>
             <i class="ph ph-x" style="cursor: pointer; font-size: 1.2rem;" onclick="closeModal('eventModal')"></i>
         </div>
         
@@ -124,24 +125,41 @@
 
 <script>
     const events = {{ events|tojson }};
+    let editingIndex = -1;
 
     function openModal(id) {
         document.getElementById(id).classList.add('active');
-        // Set default date to today
         if (id === 'eventModal') {
+            document.getElementById('modalTitle').innerText = "Ajouter un évènement";
+            document.getElementById('eventForm').reset();
             document.getElementById('eventDate').valueAsDate = new Date();
+            editingIndex = -1;
         }
+    }
+
+    function editEvent(index) {
+        const ev = events[index];
+        document.getElementById('eventDate').value = ev.date || '';
+        document.getElementById('eventType').value = ev.type || '';
+        document.getElementById('eventDescription').value = ev.description || '';
+        document.getElementById('eventCost').value = ev.cost || 0;
+        document.getElementById('eventSaving').value = ev.saving || 0;
+        
+        document.getElementById('modalTitle').innerText = "Modifier l'évènement";
+        editingIndex = index;
+        document.getElementById('eventModal').classList.add('active');
     }
 
     function closeModal(id) {
         document.getElementById(id).classList.remove('active');
+        editingIndex = -1;
     }
 
     document.getElementById('eventForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
-        const newEvent = {
-            id: Date.now(),
+        const evData = {
+            id: editingIndex > -1 ? events[editingIndex].id : Date.now(),
             date: document.getElementById('eventDate').value,
             type: document.getElementById('eventType').value,
             description: document.getElementById('eventDescription').value,
@@ -149,7 +167,12 @@
             saving: parseFloat(document.getElementById('eventSaving').value) || 0
         };
         
-        events.push(newEvent);
+        if (editingIndex > -1) {
+            events[editingIndex] = evData;
+        } else {
+            events.push(evData);
+        }
+        
         saveEvents();
     });
 
