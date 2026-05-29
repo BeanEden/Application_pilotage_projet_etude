@@ -141,9 +141,9 @@
         "id": "T-10",
         "raci": {
             "cl": "R",
-            "jc": "I",
+            "jc": "C",
             "lu": "AR",
-            "sh_1779869800150": "C"
+            "sh_1779869800150": "I"
         },
         "sprint": 2,
         "start_week": 3,
@@ -310,14 +310,33 @@
         "deps": "D1",
         "duration": "1 sem",
         "id": "T-11",
+        "raci": {
+            "cl": "I",
+            "jc": "C",
+            "lu": "AR",
+            "sh_1779869800150": "I"
+        },
         "sprint": 4,
         "start_week": 8,
         "task": "Intégration MCP PowerBI",
-        "type": "Tâche originelle",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT"
+        ],
+        "bucket": "Pipeline",
+        "deps": "C2-3",
+        "duration": "3 j",
+        "id": "T-12",
+        "sprint": 2,
+        "start_week": 6,
+        "task": "Création base SQL et migration du contenu du lakehouse",
+        "type": "Tâche additionnelle",
         "raci": {
-            "jc": "C",
+            "jc": "AR",
             "cl": "I",
-            "lu": "AR",
+            "lu": "C",
             "sh_1779869800150": "I"
         }
     }

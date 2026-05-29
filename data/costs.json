@@ -46,5 +46,21 @@
         "rebill_type": "flat",
         "rebill_value": 150,
         "rebill_amount": 150
+    },
+    {
+        "id": "1780039694451",
+        "desc": "SQL Server Standard",
+        "cat": "Infrastructure",
+        "amount": 900,
+        "attr_type": "Global",
+        "attr_val": "Projet",
+        "charge_type": "direct",
+        "purchase_price": 900,
+        "amort_years": 3,
+        "soft_recurrence": "flat",
+        "soft_collabs": [],
+        "rebill_type": "flat",
+        "rebill_value": 1000,
+        "rebill_amount": 1000
     }
 ]
