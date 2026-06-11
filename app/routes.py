@@ -108,6 +108,12 @@ def save_project_info():
     save_json('project_info.json', data)
     return jsonify({"status": "success"})
 
+@main.route('/api/save-user-stories', methods=['POST'])
+def save_user_stories():
+    data = request.json
+    save_json('user_stories.json', data)
+    return jsonify({"status": "success"})
+
 @main.route('/api/upload-image', methods=['POST'])
 def upload_image():
     if 'file' not in request.files:
@@ -158,6 +164,13 @@ def parties_prenantes():
     info = load_json('project_info.json')
     if not info: info = {}
     return render_template('stakeholders.html', title="Parties Prenantes", stakeholders=stakeholders, working_days=WORKING_DAYS_2026, tasks=tasks, costs=costs, info=info)
+
+@main.route('/cadrage/user-stories')
+def user_stories():
+    data = load_json('user_stories.json')
+    if not data:
+        data = []
+    return render_template('user_stories.html', title="Epics & User Stories", user_stories=data)
 
 @main.route('/cadrage/backlog')
 def backlog():
@@ -360,6 +373,7 @@ def export_page():
         {"id": "risques", "title": "Risques & Hypothèses", "url": "/cadrage/risques"},
         {"id": "architecture", "title": "Architecture du Projet", "url": "/cadrage/architecture"},
         {"id": "modelisation", "title": "Modélisation des Tables", "url": "/cadrage/modelisation"},
+        {"id": "user-stories", "title": "Epics & User Stories", "url": "/cadrage/user-stories"},
         {"id": "backlog", "title": "Backlog Détaillé", "url": "/cadrage/backlog"},
         {"id": "gantt", "title": "Planning Gantt", "url": "/cadrage/gantt"},
         {"id": "raci", "title": "Matrice RACI", "url": "/cadrage/raci"},

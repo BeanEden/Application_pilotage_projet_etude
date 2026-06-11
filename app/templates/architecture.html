@@ -382,10 +382,9 @@
     position: absolute;
     left: 0;
     right: 0;
-    top: 50%;
+    top: calc(50% - 2px);
     height: 4px;
     background: linear-gradient(90deg, var(--border) 0%, var(--accent-vivid) 50%, var(--border) 100%);
-    transform: translateY(-50%);
     z-index: 1;
 }
 
@@ -430,11 +429,11 @@
 }
 
 .schema-node:nth-child(even) .node-card::before {
-    content: ''; position: absolute; top: -30px; left: 50%; width: 2px; height: 30px; background: var(--accent-vivid);
+    content: ''; position: absolute; top: -30px; left: calc(50% - 1px); width: 2px; height: 30px; background: var(--accent-vivid);
 }
 
 .schema-node:nth-child(odd) .node-card::after {
-    content: ''; position: absolute; bottom: -30px; left: 50%; width: 2px; height: 30px; background: var(--accent-vivid);
+    content: ''; position: absolute; bottom: -30px; left: calc(50% - 1px); width: 2px; height: 30px; background: var(--accent-vivid);
 }
 
 .step-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
@@ -723,6 +722,11 @@ window.onclick = function(event) {
 function exportArchPDF() {
     const element = document.getElementById('architectures-list');
     
+    // Save scroll state and container width
+    const origScrollX = window.scrollX;
+    const origScrollY = window.scrollY;
+    const origWidth = element.style.width;
+    
     // Setup for full width capture
     const wrappers = document.querySelectorAll('.architecture-schema-wrapper');
     const containers = document.querySelectorAll('.architecture-schema-container');
@@ -730,7 +734,10 @@ function exportArchPDF() {
     
     element.classList.add('pdf-export-mode');
     
-    // Reset all scroll positions to avoid left gap
+    // Lock explicit width in pixels to prevent html2canvas flexbox reflow offset bugs
+    element.style.width = element.scrollWidth + 'px';
+    
+    // Reset all scroll positions to avoid left gap and absolute offset bugs
     window.scrollTo(0, 0);
     wrappers.forEach(w => {
         w.scrollLeft = 0;
@@ -762,13 +769,16 @@ function exportArchPDF() {
             scale: 2, 
             useCORS: true, 
             width: computedWidth, 
-            windowWidth: computedWidth
+            windowWidth: computedWidth,
+            scrollY: 0,
+            scrollX: 0
         },
         jsPDF:        { unit: 'mm', format: 'a3', orientation: 'landscape' }
     };
 
     html2pdf().set(opt).from(element).save().then(() => {
         // Restore UI
+        element.style.width = origWidth;
         element.classList.remove('pdf-export-mode');
         wrappers.forEach(w => w.style.overflowX = 'auto');
         containers.forEach(c => {
@@ -779,9 +789,13 @@ function exportArchPDF() {
         });
         controls.forEach(c => c.style.display = 'flex');
         document.body.removeChild(loader);
+        
+        // Restore scroll
+        window.scrollTo(origScrollX, origScrollY);
     }).catch(err => {
         console.error(err);
         document.body.removeChild(loader);
+        window.scrollTo(origScrollX, origScrollY);
         alert("Erreur lors de l'export.");
     });
 }

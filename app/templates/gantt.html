@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="page-header">
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
     <div>
         <h1>Planning Gantt</h1>
         <p class="subtitle">Séquençage temporel, dépendances et chemin critique. Survoler une barre pour plus d'infos.</p>
     </div>
+    <button class="btn btn-primary" onclick="exportGanttPDF()" style="display: flex; align-items: center; gap: 8px;">
+        <i class="ph ph-file-pdf"></i> Exporter PDF
+    </button>
 </div>
 
 <!-- Filters -->
@@ -46,7 +49,7 @@
     </label>
 </div>
 
-<div class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border);">
+<div id="gantt-export-area" class="card" style="padding: 0; overflow: hidden; border: 1px solid var(--border);">
     <div style="display: flex; background: var(--bg-body); border-bottom: 2px solid var(--border); position: sticky; top: 0; z-index: 100;">
         <div style="width: 280px; padding: 0.85rem 1rem; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); border-right: 1px solid var(--border);">Tâches</div>
         <div style="flex: 1; display: grid; grid-template-columns: repeat({{ weeks|length }}, 1fr);">
@@ -56,7 +59,7 @@
         </div>
     </div>
     <div id="gantt-scroll-pane" style="position: relative; max-height: 600px; overflow-y: auto; overflow-x: hidden;">
-        <svg id="dep-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50;"></svg>
+        <svg id="dep-svg" xmlns="http://www.w3.org/2000/svg" style="position: absolute; top: 0; left: 0; pointer-events: none; z-index: 50;"></svg>
         <div id="gantt-container"></div>
     </div>
 </div>
@@ -182,7 +185,16 @@ document.addEventListener('mousemove', (e) => {
 function drawDependencies(tasks) {
     const svg = document.getElementById('dep-svg');
     const scrollPane = document.getElementById('gantt-scroll-pane');
-    svg.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="rgba(110,110,115,0.4)"/></marker></defs>';
+    
+    // Explicit size in pixels fixes html2canvas offset bugs and SVG clipping
+    const sw = scrollPane.scrollWidth;
+    const sh = scrollPane.scrollHeight;
+    svg.style.width = sw + 'px';
+    svg.style.height = sh + 'px';
+    svg.setAttribute('width', sw);
+    svg.setAttribute('height', sh);
+    
+    svg.innerHTML = '';
     const bRect = scrollPane.getBoundingClientRect();
     const scrollTop = scrollPane.scrollTop;
     tasks.forEach(t => {
@@ -198,13 +210,19 @@ function drawDependencies(tasks) {
                     const y2 = (er.top - bRect.top) + er.height/2 + scrollTop;
                     const cp1x = x1 + (x2 - x1) / 2;
                     const pathData = `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp1x} ${y2}, ${x2} ${y2}`;
+                    
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("d", pathData);
-                    path.setAttribute("stroke", "rgba(110,110,115,0.25)");
+                    path.setAttribute("stroke", "rgba(110,110,115,0.4)");
                     path.setAttribute("stroke-width", "1.5");
                     path.setAttribute("fill", "none");
-                    path.setAttribute("marker-end", "url(#arrowhead)");
                     svg.appendChild(path);
+                    
+                    // Draw arrowhead explicitly as a polygon to avoid html2canvas marker rendering issues
+                    const arrow = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                    arrow.setAttribute("points", `${x2},${y2} ${x2-8},${y2-3.5} ${x2-8},${y2+3.5}`);
+                    arrow.setAttribute("fill", "rgba(110,110,115,0.4)");
+                    svg.appendChild(arrow);
                 }
             });
         }
@@ -213,6 +231,47 @@ function drawDependencies(tasks) {
 
 window.addEventListener('resize', renderGantt);
 renderGantt();
+
+function exportGanttPDF() {
+    const element = document.getElementById('gantt-export-area');
+    const scrollPane = document.getElementById('gantt-scroll-pane');
+    
+    const origMaxHeight = scrollPane.style.maxHeight;
+    const origOverflowY = scrollPane.style.overflowY;
+    const origWidth = element.style.width;
+    
+    // Resetting scroll prevents absolute positioning offset bugs in html2canvas
+    const origScroll = window.scrollY;
+    window.scrollTo(0, 0);
+    
+    // Lock the width of the container in pixels. 
+    // This prevents html2canvas from slightly resizing the Flexbox grid (due to scrollbar differences) 
+    // which would cause the absolute SVG paths to appear misaligned.
+    element.style.width = element.getBoundingClientRect().width + 'px';
+    
+    scrollPane.style.maxHeight = 'none';
+    scrollPane.style.overflowY = 'visible';
+    
+    renderGantt();
+    
+    setTimeout(() => {
+        const opt = {
+            margin:       0.2,
+            filename:     'Planning_Gantt_NovaRetail.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+            jsPDF:        { unit: 'in', format: 'a3', orientation: 'landscape' }
+        };
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            scrollPane.style.maxHeight = origMaxHeight;
+            scrollPane.style.overflowY = origOverflowY;
+            element.style.width = origWidth;
+            window.scrollTo(0, origScroll);
+            renderGantt();
+        });
+    }, 150);
+}
 </script>
 
 <style>

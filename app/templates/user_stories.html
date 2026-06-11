@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Epics & User Stories</h1>
+        <p class="subtitle">Définition des besoins utilisateurs par grandes épopées.</p>
+    </div>
+</div>
+
+<div class="user-stories-container">
+    {% for epic in user_stories %}
+    <div class="card" style="margin-bottom: 2rem;">
+        <h2 style="font-size: 1.1rem; color: var(--accent); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-light);">
+            <i class="ph ph-flag" style="color: var(--accent-vivid); margin-right: 8px;"></i>
+            {{ epic.epic }}
+        </h2>
+        
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for story in epic.stories %}
+            <div style="display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; background: var(--bg-body); border-radius: 8px; border: 1px solid var(--border-light);">
+                <span class="badge" style="background: var(--accent-vivid); color: white; white-space: nowrap; font-weight: 800; font-family: monospace;">{{ story.id }}</span>
+                <div>
+                    <span style="color: var(--text-secondary); font-weight: 500;">En tant que </span>
+                    <strong style="color: var(--accent);">{{ story.role }}</strong>, 
+                    <span style="color: var(--text-secondary); font-weight: 500;">je veux </span>
+                    <span style="color: var(--text-primary); font-weight: 600;">{{ story.want }}</span>.
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
