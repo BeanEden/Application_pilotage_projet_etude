@@ -30,23 +30,23 @@
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 0.5rem;">
         <div
             style="padding: 1.25rem; background: var(--bg-body); border-left: 4px solid var(--accent-vivid); border-radius: 8px;">
-            <h4 style="color: var(--accent); font-size: 0.9rem; margin-bottom: 0.4rem;">Pipeline Médaillon</h4>
-            <div id="context_obj_medallion" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_medallion', "Mise en place d'une architecture Bronze / Silver / Gold sur Microsoft Fabric.")|safe }}</div>
+            <h4 style="color: var(--accent); font-size: 0.9rem; margin-bottom: 0.4rem;">Le Chatbot Widget</h4>
+            <div id="context_obj_widget" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_widget', "Déploiement d'un widget conversationnel intégrable sur n'importe quel site client.")|safe }}</div>
         </div>
         <div
             style="padding: 1.25rem; background: var(--bg-body); border-left: 4px solid var(--purple); border-radius: 8px;">
-            <h4 style="color: var(--purple); font-size: 0.9rem; margin-bottom: 0.4rem;">Automatisation Docling</h4>
-            <div id="context_obj_docling" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_docling', "Utilisation de Docling pour extraire les données des rapports .docx automatiquement.")|safe }}</div>
+            <h4 style="color: var(--purple); font-size: 0.9rem; margin-bottom: 0.4rem;">Application RAG Admin</h4>
+            <div id="context_obj_admin" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_admin', "Mise à disposition d'une interface sécurisée pour l'ingestion des bases documentaires clientes.")|safe }}</div>
         </div>
         <div
             style="padding: 1.25rem; background: var(--bg-body); border-left: 4px solid var(--teal); border-radius: 8px;">
-            <h4 style="color: var(--teal); font-size: 0.9rem; margin-bottom: 0.4rem;">Visualisation Power BI</h4>
-            <div id="context_obj_powerbi" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_powerbi', "Dashboards interactifs avec connexion DirectLake pour des analyses en temps réel.")|safe }}</div>
+            <h4 style="color: var(--teal); font-size: 0.9rem; margin-bottom: 0.4rem;">CRM & Facturation</h4>
+            <div id="context_obj_crm" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_crm', "Plateforme interne permettant à Vocalis de monitorer la consommation API et gérer les abonnements.")|safe }}</div>
         </div>
         <div
             style="padding: 1.25rem; background: var(--bg-body); border-left: 4px solid var(--green); border-radius: 8px;">
-            <h4 style="color: var(--green); font-size: 0.9rem; margin-bottom: 0.4rem;">Stack Alternative</h4>
-            <p style="font-size: 0.85rem;">Benchmark Docker / Airflow / Superset en parallèle de la stack Microsoft.</p>
+            <h4 style="color: var(--green); font-size: 0.9rem; margin-bottom: 0.4rem;">Site Vitrine Client</h4>
+            <div id="context_obj_site" class="editable-area" contenteditable="true" style="font-size: 0.85rem; outline: none; padding: 0.25rem; border-radius: 4px;">{{ info.get('context_obj_site', "Création d'un site web de démonstration pour intégrer et tester le chatbot en conditions réelles.")|safe }}</div>
         </div>
     </div>
 </div>
@@ -64,9 +64,10 @@ const projectInfo = {{ info|tojson }};
 function saveContextInfo() {
     projectInfo.context_problem = document.getElementById('context_problem').innerHTML.trim();
     projectInfo.context_solution = document.getElementById('context_solution').innerHTML.trim();
-    projectInfo.context_obj_medallion = document.getElementById('context_obj_medallion').innerHTML.trim();
-    projectInfo.context_obj_docling = document.getElementById('context_obj_docling').innerHTML.trim();
-    projectInfo.context_obj_powerbi = document.getElementById('context_obj_powerbi').innerHTML.trim();
+    projectInfo.context_obj_widget = document.getElementById('context_obj_widget').innerHTML.trim();
+    projectInfo.context_obj_admin = document.getElementById('context_obj_admin').innerHTML.trim();
+    projectInfo.context_obj_crm = document.getElementById('context_obj_crm').innerHTML.trim();
+    projectInfo.context_obj_site = document.getElementById('context_obj_site').innerHTML.trim();
     
     fetch('/api/save-project-info', {
         method: 'POST',
