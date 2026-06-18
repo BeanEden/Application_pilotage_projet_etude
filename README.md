@@ -102,3 +102,10 @@ docker run -p 7860:7860 vocalis-pm
 ```
 
 *(Note : Le projet est pré-configuré pour un déploiement instantané sur Hugging Face Spaces)*
+
+---
+
+## ⚖️ Propriété Intellectuelle
+
+Cette application et son code source sont la propriété exclusive de **Jean-Corentin LOIRAT**.  
+Ils ne sont **pas libres de droit**. Toute utilisation, reproduction, modification, distribution ou copie, totale ou partielle, est strictement interdite sans l'autorisation explicite de l'auteur.
