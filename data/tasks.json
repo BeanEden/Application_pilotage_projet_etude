@@ -1,343 +1,281 @@
 [
     {
         "assignees": [
-            "Jean-Corentin LOIRAT",
-            "Clément METOIS",
-            "Ludovic PICARD"
-        ],
-        "bucket": "Cadrage",
-        "deps": "-",
-        "duration": "1 sem",
-        "id": "C0-1",
-        "raci": {
-            "cl": "A",
-            "jc": "C",
-            "lu": "AR",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 1,
-        "start_week": 0,
-        "task": "Analyse sujet & constitution équipe"
-    },
-    {
-        "assignees": [
-            "Jean-Corentin LOIRAT",
-            "Ludovic PICARD"
-        ],
-        "bucket": "Cadrage",
-        "deps": "-",
-        "duration": "1 sem",
-        "id": "C0-5",
-        "raci": {
-            "cl": "C",
-            "jc": "A",
-            "lu": "AR",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 1,
-        "start_week": 0,
-        "task": "Setup Fabric, Lakehouse, planning"
-    },
-    {
-        "assignees": [
-            "Jean-Corentin LOIRAT",
             "Clément METOIS"
         ],
-        "bucket": "Architecture",
-        "deps": "C0-1, C0-5",
-        "duration": "2 sem",
-        "id": "A1-5",
+        "bucket": "Développement des 4 infrastructures",
+        "deps": "T-8",
+        "duration": "1 mois",
+        "end_date": "2025-12-01",
+        "id": "T-1",
+        "kanban_status": "done",
         "raci": {
-            "cl": "R",
-            "jc": "C",
-            "lu": "AR",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 1,
-        "start_week": 1,
-        "task": "Architecture & Documentation (Liv. A)"
-    },
-    {
-        "assignees": [
-            "Ludovic PICARD",
-            "Clément METOIS"
-        ],
-        "bucket": "Modélisation",
-        "deps": "C0-1, C0-5",
-        "duration": "2 sem",
-        "id": "B1-5",
-        "raci": {
-            "cl": "R",
-            "jc": "C",
-            "lu": "A/R",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 1,
-        "start_week": 1,
-        "task": "Modélisation données (Liv. B)"
-    },
-    {
-        "assignees": [
-            "Ludovic PICARD"
-        ],
-        "bucket": "Architecture",
-        "deps": "C0-5",
-        "duration": "1 sem",
-        "id": "T-9",
-        "raci": {
-            "cl": "I",
-            "jc": "AR",
-            "lu": "R",
-            "sh_1779869800150": "C"
-        },
-        "sprint": 1,
-        "start_week": 2,
-        "task": "Liaison mail SharePoint via PowerAutomate",
-        "type": "Tâche additionnelle"
-    },
-    {
-        "assignees": [
-            "Clément METOIS"
-        ],
-        "bucket": "Pipeline",
-        "deps": "B1-5",
-        "duration": "1 sem",
-        "id": "C1",
-        "raci": {
-            "cl": "I",
-            "jc": "C",
-            "lu": "AR",
-            "sh_1779869800150": "I"
+            "cl": "AR",
+            "jc": "I",
+            "lu": "C"
         },
         "sprint": 2,
-        "start_week": 3,
-        "task": "NB_01 Bronze (Fabric)"
-    },
-    {
-        "assignees": [
-            "Clément METOIS"
-        ],
-        "bucket": "Stack Alternative",
-        "deps": "A1-5",
-        "duration": "2 sem",
-        "id": "CL-1-4",
-        "raci": {
-            "cl": "A/R",
-            "jc": "C",
-            "lu": "I",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 2,
-        "start_week": 3,
-        "task": "Docker + MinIO + Airflow setup"
-    },
-    {
-        "assignees": [
-            "Ludovic PICARD"
-        ],
-        "bucket": "Architecture",
-        "deps": "A1-5, B1-5",
-        "duration": "2 j",
-        "id": "T-10",
-        "raci": {
-            "cl": "R",
-            "jc": "C",
-            "lu": "AR",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 2,
-        "start_week": 3,
-        "task": "Ajouts de formats",
-        "type": "Évolution d'une tâche existante"
-    },
-    {
-        "assignees": [
-            "Clément METOIS",
-            "Jean-Corentin LOIRAT"
-        ],
-        "bucket": "Pipeline",
-        "deps": "C1",
-        "duration": "2 sem",
-        "id": "C2-3",
-        "raci": {
-            "cl": "I",
-            "jc": "C",
-            "lu": "AR",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 2,
-        "start_week": 4,
-        "task": "NB_02 Silver + NB_03 Gold (Fabric)"
-    },
-    {
-        "assignees": [
-            "Clément METOIS"
-        ],
-        "bucket": "Stack Alternative",
-        "deps": "CL-1-4",
-        "duration": "1 sem",
-        "id": "CL-7-9",
-        "raci": {
-            "cl": "A/R",
-            "jc": "C",
-            "lu": "C",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 3,
+        "start_date": "2025-11-01",
         "start_week": 5,
-        "task": "Superset dashboards + doc comparative"
-    },
-    {
-        "assignees": [
-            "Clément METOIS"
-        ],
-        "bucket": "Pipeline",
-        "deps": "C2-3",
-        "duration": "1 sem",
-        "id": "C4",
-        "raci": {
-            "cl": "I",
-            "jc": "C",
-            "lu": "AR",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 3,
-        "start_week": 6,
-        "task": "Data Pipeline Fabric (orchestration)"
-    },
-    {
-        "assignees": [
-            "Jean-Corentin LOIRAT",
-            "Clément METOIS",
-            "Ludovic PICARD"
-        ],
-        "bucket": "Rapport",
-        "deps": "A1-5, B1-5",
-        "duration": "2 sem",
-        "id": "E1-7",
-        "raci": {
-            "cl": "C",
-            "jc": "A/R",
-            "lu": "R",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 3,
-        "start_week": 6,
-        "task": "Rédaction sections rapport"
-    },
-    {
-        "assignees": [
-            "Jean-Corentin LOIRAT"
-        ],
-        "bucket": "Power BI",
-        "deps": "C4",
-        "duration": "1 sem",
-        "id": "D1",
-        "raci": {
-            "cl": "I",
-            "jc": "A/R",
-            "lu": "C",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 4,
-        "start_week": 7,
-        "task": "Connexion Power BI DirectLake"
-    },
-    {
-        "assignees": [
-            "Ludovic PICARD",
-            "Jean-Corentin LOIRAT"
-        ],
-        "bucket": "Power BI",
-        "deps": "D1",
-        "duration": "2 sem",
-        "id": "D2-7",
-        "raci": {
-            "cl": "I",
-            "jc": "AR",
-            "lu": "C",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 4,
-        "start_week": 8,
-        "task": "Pages dashboard + KPI + mise en forme"
-    },
-    {
-        "assignees": [
-            "Jean-Corentin LOIRAT",
-            "Clément METOIS",
-            "Ludovic PICARD"
-        ],
-        "bucket": "Rapport",
-        "deps": "E1-7",
-        "duration": "1 sem",
-        "id": "E8",
-        "raci": {
-            "cl": "C",
-            "jc": "A/R",
-            "lu": "R",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 4,
-        "start_week": 8,
-        "task": "Assemblage & relecture rapport final"
-    },
-    {
-        "assignees": [
-            "Jean-Corentin LOIRAT",
-            "Clément METOIS",
-            "Ludovic PICARD"
-        ],
-        "bucket": "Soutenance",
-        "deps": "E1-7",
-        "duration": "2 sem",
-        "id": "F1-5",
-        "raci": {
-            "cl": "C",
-            "jc": "AR",
-            "lu": "R",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 4,
-        "start_week": 8,
-        "task": "Support slides + répétition soutenance"
-    },
-    {
-        "assignees": [
-            "Ludovic PICARD"
-        ],
-        "bucket": "Cadrage",
-        "deps": "D1",
-        "duration": "1 sem",
-        "id": "T-11",
-        "raci": {
-            "cl": "I",
-            "jc": "C",
-            "lu": "AR",
-            "sh_1779869800150": "I"
-        },
-        "sprint": 4,
-        "start_week": 8,
-        "task": "Intégration MCP PowerBI",
+        "task": "Site web vitrine",
         "type": "Tâche originelle"
     },
     {
         "assignees": [
             "Jean-Corentin LOIRAT"
         ],
-        "bucket": "Pipeline",
-        "deps": "C2-3",
-        "duration": "3 j",
-        "id": "T-12",
-        "sprint": 2,
-        "start_week": 6,
-        "task": "Création base SQL et migration du contenu du lakehouse",
-        "type": "Tâche additionnelle",
+        "bucket": "Architecture & setup",
+        "deps": "T-8",
+        "duration": "1 mois",
+        "end_date": "2025-12-01",
+        "id": "T-2",
+        "kanban_status": "done",
         "raci": {
+            "cl": "C",
             "jc": "AR",
+            "lu": "I"
+        },
+        "sprint": 2,
+        "start_date": "2025-11-01",
+        "start_week": 5,
+        "task": "Architecture de la base de données document",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Ludovic PICARD"
+        ],
+        "bucket": "Architecture & setup",
+        "deps": "T-13",
+        "duration": "1 mois",
+        "end_date": "2025-12-01",
+        "id": "T-5",
+        "kanban_status": "done",
+        "raci": {
             "cl": "I",
-            "lu": "C",
-            "sh_1779869800150": "I"
-        }
+            "jc": "C",
+            "lu": "AR"
+        },
+        "sprint": 2,
+        "start_date": "2025-11-01",
+        "start_week": 1,
+        "task": "Architecture base de données CRM",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT"
+        ],
+        "bucket": "Développement des 4 infrastructures",
+        "deps": "T-2",
+        "duration": "1 mois",
+        "end_date": "2025-12-15",
+        "id": "T-3",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "C",
+            "jc": "AR",
+            "lu": "I"
+        },
+        "sprint": 2,
+        "start_date": "2025-11-15",
+        "start_week": 9,
+        "task": "Application d'intégration de documents",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT"
+        ],
+        "bucket": "Architecture & setup",
+        "deps": "T-3",
+        "duration": "1 mois",
+        "end_date": "2025-12-15",
+        "id": "T-4",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "I",
+            "jc": "AR",
+            "lu": "C"
+        },
+        "sprint": 2,
+        "start_date": "2025-11-15",
+        "start_week": 13,
+        "task": "Chatbot basique",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Clément METOIS"
+        ],
+        "bucket": "Développement des 4 infrastructures",
+        "deps": "T-4",
+        "duration": "1 mois",
+        "end_date": "2026-01-31",
+        "id": "T-7",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "AR",
+            "jc": "I",
+            "lu": "C"
+        },
+        "sprint": 3,
+        "start_date": "2026-01-01",
+        "start_week": 17,
+        "task": "Automatisation",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Clément METOIS",
+            "Ludovic PICARD"
+        ],
+        "bucket": "Cadrage & analyse",
+        "deps": "-",
+        "duration": "1 sem",
+        "end_date": "2025-10-08",
+        "id": "T-13",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "AR",
+            "jc": "AR",
+            "lu": "AR"
+        },
+        "sprint": 1,
+        "start_date": "2025-10-01",
+        "start_week": 0,
+        "task": "Mise en commun",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Clément METOIS",
+            "Ludovic PICARD"
+        ],
+        "bucket": "Cadrage & analyse",
+        "deps": "T-13",
+        "duration": "1 sem",
+        "end_date": "2025-10-08",
+        "id": "T-14",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "AR",
+            "jc": "AR",
+            "lu": "AR"
+        },
+        "sprint": 1,
+        "start_date": "2025-10-01",
+        "start_week": 1,
+        "task": "Répartition des rôles",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT",
+            "Clément METOIS",
+            "Ludovic PICARD"
+        ],
+        "bucket": "Cadrage & analyse",
+        "deps": "T-13",
+        "duration": "1 mois",
+        "end_date": "2025-11-01",
+        "id": "T-8",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "C",
+            "jc": "AR"
+        },
+        "sprint": 1,
+        "start_date": "2025-10-02",
+        "start_week": 1,
+        "task": "Planification",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Jean-Corentin LOIRAT"
+        ],
+        "bucket": "Développement des 4 infrastructures",
+        "deps": "T-4",
+        "duration": "1 mois",
+        "end_date": "2026-01-31",
+        "id": "T-9",
+        "kanban_annotation": "",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "C",
+            "jc": "AR",
+            "lu": "I"
+        },
+        "sprint": 3,
+        "start_date": "2026-01-01",
+        "start_week": 17,
+        "task": "Intégration plug & play",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Ludovic PICARD"
+        ],
+        "bucket": "",
+        "deps": "T-7",
+        "duration": "1 mois",
+        "end_date": "2026-03-03",
+        "id": "T-10",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "I",
+            "jc": "C",
+            "lu": "AR"
+        },
+        "sprint": 4,
+        "start_date": "2026-02-01",
+        "start_week": 8,
+        "task": "Intégration statistique",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Ludovic PICARD"
+        ],
+        "bucket": "Développement des 4 infrastructures",
+        "deps": "T-7",
+        "duration": "1 mois",
+        "end_date": "2026-03-30",
+        "id": "T-12",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "I",
+            "jc": "C",
+            "lu": "AR"
+        },
+        "sprint": 4,
+        "start_date": "2026-03-01",
+        "start_week": 8,
+        "task": "Application de suivi de paiement",
+        "type": "Tâche originelle"
+    },
+    {
+        "assignees": [
+            "Ludovic PICARD"
+        ],
+        "bucket": "Développement des 4 infrastructures",
+        "deps": "T-9",
+        "duration": "1 mois",
+        "end_date": "2026-05-01",
+        "id": "T-11",
+        "kanban_status": "done",
+        "raci": {
+            "cl": "I",
+            "jc": "C",
+            "lu": "AR"
+        },
+        "sprint": 4,
+        "start_date": "2026-04-01",
+        "start_week": 21,
+        "task": "Dashboards client",
+        "type": "Tâche originelle"
     }
 ]

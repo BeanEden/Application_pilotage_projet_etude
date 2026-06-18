@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Kanban du Projet</h1>
+        <p class="subtitle">Suivi visuel et annotations des tâches.</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="display: flex; gap: 1.25rem; flex-wrap: wrap; align-items: flex-end; padding: 1.25rem; margin-bottom: 1.5rem;">
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+        <label>Collaborateur</label>
+        <select id="filter-collab" class="form-control" onchange="renderKanban()">
+            <option value="all">Tous les collaborateurs</option>
+            {% for c in collaborators %}
+            <option value="{{ c.name }}">{{ c.name.split(' ')[0] }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+        <label>Sprint</label>
+        <select id="filter-sprint" class="form-control" onchange="renderKanban()">
+            <option value="all">Tous les sprints</option>
+            <option value="1">Sprint 1</option><option value="2">Sprint 2</option>
+            <option value="3">Sprint 3</option><option value="4">Sprint 4</option>
+        </select>
+    </div>
+    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 140px;">
+        <label>Bucket</label>
+        <select id="filter-bucket" class="form-control" onchange="renderKanban()">
+            <option value="all">Tous les buckets</option>
+            <option value="Cadrage & analyse">Cadrage & analyse</option>
+            <option value="Architecture & setup">Architecture & setup</option>
+            <option value="Développement des 4 infrastructures">Développement des 4 infrastructures</option>
+            <option value="Tests & évaluation">Tests & évaluation</option>
+            <option value="Documentation & soutenance">Documentation & soutenance</option>
+        </select>
+    </div>
+</div>
+
+<div class="kanban-board" style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; align-items: flex-start; height: calc(100vh - 180px);">
+    <!-- Colonne A faire -->
+    <div class="kanban-column" style="flex: 1; min-width: 300px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; height: 100%;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-circle" style="color: var(--text-secondary);"></i> À faire</h3>
+            <span class="badge" id="count-todo">0</span>
+        </div>
+        <div class="kanban-cards" id="col-todo" style="padding: 1rem; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;" ondrop="drop(event)" ondragover="allowDrop(event)" data-status="todo">
+            <!-- Cartes insérées dynamiquement -->
+        </div>
+    </div>
+
+    <!-- Colonne En cours -->
+    <div class="kanban-column" style="flex: 1; min-width: 300px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; height: 100%;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-spinner" style="color: var(--warning);"></i> En cours</h3>
+            <span class="badge" id="count-inprogress">0</span>
+        </div>
+        <div class="kanban-cards" id="col-inprogress" style="padding: 1rem; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;" ondrop="drop(event)" ondragover="allowDrop(event)" data-status="inprogress">
+        </div>
+    </div>
+
+    <!-- Colonne En révision -->
+    <div class="kanban-column" style="flex: 1; min-width: 300px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; height: 100%;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-eye" style="color: var(--accent-vivid);"></i> En révision</h3>
+            <span class="badge" id="count-review">0</span>
+        </div>
+        <div class="kanban-cards" id="col-review" style="padding: 1rem; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;" ondrop="drop(event)" ondragover="allowDrop(event)" data-status="review">
+        </div>
+    </div>
+
+    <!-- Colonne Terminé -->
+    <div class="kanban-column" style="flex: 1; min-width: 300px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; height: 100%;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="color: var(--success);"></i> Terminé</h3>
+            <span class="badge" id="count-done">0</span>
+        </div>
+        <div class="kanban-cards" id="col-done" style="padding: 1rem; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;" ondrop="drop(event)" ondragover="allowDrop(event)" data-status="done">
+        </div>
+    </div>
+</div>
+
+<script>
+let allTasks = {{ tasks|tojson|safe }};
+
+function renderKanban() {
+    const fCollab = document.getElementById('filter-collab').value;
+    const fSprint = document.getElementById('filter-sprint').value;
+    const fBucket = document.getElementById('filter-bucket').value;
+
+    const cols = {
+        'todo': document.getElementById('col-todo'),
+        'inprogress': document.getElementById('col-inprogress'),
+        'review': document.getElementById('col-review'),
+        'done': document.getElementById('col-done')
+    };
+
+    // Vider les colonnes
+    Object.values(cols).forEach(col => col.innerHTML = '');
+
+    const counts = { 'todo': 0, 'inprogress': 0, 'review': 0, 'done': 0 };
+
+    allTasks.forEach(task => {
+        const matchCollab = fCollab === 'all' || (task.assignees && task.assignees.includes(fCollab));
+        const matchSprint = fSprint === 'all' || (task.sprint && task.sprint.toString() === fSprint);
+        const matchBucket = fBucket === 'all' || task.bucket === fBucket;
+        
+        if (!(matchCollab && matchSprint && matchBucket)) return;
+
+        const status = task.kanban_status || 'todo';
+        if (!cols[status]) return;
+
+        counts[status]++;
+
+        const card = document.createElement('div');
+        card.className = 'kanban-card';
+        card.draggable = true;
+        card.id = `card-${task.id}`;
+        card.ondragstart = drag;
+        
+        // Style de la carte
+        card.style.background = 'var(--bg-body)';
+        card.style.padding = '1rem';
+        card.style.borderRadius = '8px';
+        card.style.border = '1px solid var(--border)';
+        card.style.cursor = 'grab';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.gap = '0.5rem';
+
+        const assigneesHtml = (task.assignees || []).map(a => `<span class="badge" style="font-size: 0.7rem; padding: 2px 6px;">${a.split(' ')[0]}</span>`).join('');
+        
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <span class="mono" style="font-size: 0.75rem; color: var(--accent-vivid); font-weight: 700;">${task.id}</span>
+                <span style="font-size: 0.75rem; color: var(--text-secondary);"><i class="ph ph-clock"></i> ${task.duration}</span>
+            </div>
+            <div style="font-weight: 600; font-size: 0.9rem; line-height: 1.3;">${task.task}</div>
+            <div style="display: flex; gap: 4px; flex-wrap: wrap;">${assigneesHtml}</div>
+            <div style="margin-top: 0.5rem; border-top: 1px dashed var(--border); padding-top: 0.5rem;">
+                <label style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; display: block; margin-bottom: 0.25rem;">Annotations</label>
+                <textarea id="annot-${task.id}" style="width: 100%; min-height: 50px; font-size: 0.8rem; background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 4px; color: var(--text);" placeholder="Ajouter une note..." onblur="saveAnnotation('${task.id}')">${task.kanban_annotation || ''}</textarea>
+            </div>
+        `;
+        cols[status].appendChild(card);
+    });
+
+    // Mettre à jour les compteurs
+    document.getElementById('count-todo').innerText = counts.todo;
+    document.getElementById('count-inprogress').innerText = counts.inprogress;
+    document.getElementById('count-review').innerText = counts.review;
+    document.getElementById('count-done').innerText = counts.done;
+}
+
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    const cardId = ev.dataTransfer.getData("text");
+    const targetCol = ev.target.closest('.kanban-cards');
+    
+    if (targetCol) {
+        targetCol.appendChild(document.getElementById(cardId));
+        const taskId = cardId.replace('card-', '');
+        const newStatus = targetCol.getAttribute('data-status');
+        
+        updateTaskStatus(taskId, newStatus);
+    }
+}
+
+function updateTaskStatus(taskId, status) {
+    const task = allTasks.find(t => t.id === taskId);
+    if (task) {
+        task.kanban_status = status;
+        saveAllTasks();
+    }
+}
+
+function saveAnnotation(taskId) {
+    const text = document.getElementById(`annot-${taskId}`).value;
+    const task = allTasks.find(t => t.id === taskId);
+    if (task) {
+        task.kanban_annotation = text;
+        saveAllTasks(false); // Ne pas redessiner pour ne pas perdre le focus
+    }
+}
+
+function saveAllTasks(reRender = true) {
+    fetch('/api/save-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(allTasks)
+    }).then(() => {
+        if (reRender) renderKanban();
+    });
+}
+
+renderKanban();
+</script>
+{% endblock %}

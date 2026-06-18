@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify
 
 main = Blueprint('main', __name__)
@@ -21,10 +22,50 @@ def get_collaborators():
     WORKING_DAYS_2026 = 251
     collabs = load_json('collaborators.json')
     for c in collabs:
-        # 'tjm' is the calculated internal cost for the stakeholders view
         c['tjm'] = round((c['salary'] * (1 + c['charge_rate'])) / WORKING_DAYS_2026, 2)
-        # 'tjm_applied' remains the billing TJM loaded from collaborators.json
     return collabs
+
+def get_dynamic_timeline(tasks):
+    dates = []
+    for t in tasks:
+        if t.get('start_date'): dates.append(datetime.strptime(t['start_date'], '%Y-%m-%d'))
+        if t.get('end_date'): dates.append(datetime.strptime(t['end_date'], '%Y-%m-%d'))
+    
+    if not dates:
+        default_weeks = ["12/05", "19/05", "26/05", "02/06", "09/06", "16/06", "23/06", "30/06", "07/07", "14/07"]
+        default_months = ["Mai 2026", "Juin 2026", "Juil 2026"]
+        return default_weeks, default_months, "2026-05-12", 70
+    
+    min_date = min(dates)
+    max_date = max(dates)
+    start_project_date = min_date.strftime('%Y-%m-%d')
+    
+    # Generate weeks
+    weeks = []
+    curr = min_date
+    while curr <= max_date + timedelta(days=6):
+        weeks.append(curr.strftime('%d/%m'))
+        curr += timedelta(days=7)
+        
+    if not weeks:
+        weeks.append(min_date.strftime('%d/%m'))
+        
+    # Generate months
+    months = []
+    curr_month = min_date.replace(day=1)
+    while curr_month <= max_date:
+        months.append(curr_month.strftime('%b %Y'))
+        # Add 32 days and replace day to 1 to advance by 1 month safely
+        next_month = (curr_month + timedelta(days=32)).replace(day=1)
+        curr_month = next_month
+        
+    if not months:
+        months.append(min_date.strftime('%b %Y'))
+        
+    total_days = (max_date - min_date).days
+    if total_days <= 0: total_days = 7
+
+    return weeks, months, start_project_date, total_days
 
 def get_project_total():
     tasks = load_json('tasks.json')
@@ -137,8 +178,8 @@ def index():
     events = load_json('events.json')
     costs = load_json('costs.json')
     project_total = get_project_total()
-    weeks = ["12/05", "19/05", "26/05", "02/06", "09/06", "16/06", "23/06", "30/06", "07/07", "14/07"]
-    return render_template('index.html', title="Dashboard NovaRetail", 
+    weeks, months, start_project, total_days = get_dynamic_timeline(tasks)
+    return render_template('index.html', title="Dashboard Vocalis", 
                            tasks=tasks, collaborators=collaborators, 
                            events=events, costs=costs, 
                            project_total=project_total, weeks=weeks)
@@ -180,10 +221,13 @@ def backlog():
 
 @main.route('/cadrage/gantt')
 def gantt():
-    weeks = ["12/05", "19/05", "26/05", "02/06", "09/06", "16/06", "23/06", "30/06", "07/07", "14/07"]
     tasks = load_json('tasks.json')
     collaborators = get_collaborators()
-    return render_template('gantt.html', title="Planning Gantt", weeks=weeks, tasks=tasks, collaborators=collaborators)
+    weeks, months, start_project_date, total_days = get_dynamic_timeline(tasks)
+    return render_template('gantt.html', title="Planning Gantt", 
+                           weeks=weeks, months=months, 
+                           start_project_date=start_project_date, total_days=total_days, 
+                           tasks=tasks, collaborators=collaborators)
 
 @main.route('/cadrage/raci')
 def raci():
@@ -194,7 +238,7 @@ def raci():
 @main.route('/cadrage/couts')
 def couts():
     categories = ["Infrastructure", "Logiciel", "Matériel", "Déplacement", "Formation", "Autre"]
-    buckets = ["Cadrage", "Architecture", "Modélisation", "Pipeline", "Power BI", "Rapport", "Soutenance"]
+    buckets = ["Cadrage & analyse", "Architecture & setup", "Développement des 4 infrastructures", "Tests & évaluation", "Documentation & soutenance"]
     collaborators = [s['name'] for s in load_json('collaborators.json')]
     costs = load_json('costs.json')
     
@@ -305,7 +349,11 @@ def budget():
     collaborators = get_collaborators()
     satellite_costs = load_json('costs.json')
     categories = ["Infrastructure", "Logiciel", "Matériel", "Déplacement", "Formation", "Autre"]
-    return render_template('budget.html', title="Suivi Budgétaire", tasks=tasks, collaborators=collaborators, satellite_costs=satellite_costs, categories=categories)
+    weeks, months, start_project_date, total_days = get_dynamic_timeline(tasks)
+    return render_template('budget.html', title="Suivi Budgétaire", tasks=tasks, 
+                           collaborators=collaborators, satellite_costs=satellite_costs, 
+                           categories=categories, weeks=weeks, months=months, 
+                           start_project_date=start_project_date, total_days=total_days)
 
 @main.route('/cadrage/rentabilite')
 def rentabilite():
@@ -328,7 +376,7 @@ def suivi():
     collaborators = get_collaborators()
     satellite_costs = load_json('costs.json')
     events = load_json('events.json')
-    weeks = ["12/05", "19/05", "26/05", "02/06", "09/06", "16/06", "23/06", "30/06", "07/07", "14/07"]
+    weeks, months, _, _ = get_dynamic_timeline(tasks)
     return render_template('suivi.html', title="Suivi d'Avancement", tasks=tasks, collaborators=collaborators, satellite_costs=satellite_costs, events=events, weeks=weeks)
 
 @main.route('/cadrage/evenements')
@@ -362,6 +410,12 @@ def exploitation():
     costs = load_json('operating_costs.json')
     categories = ["Cloud / Infra", "Licences", "Maintenance", "Support", "Formation", "Autre"]
     return render_template('operating_costs.html', title="Coûts d'Exploitation", costs=costs, categories=categories)
+
+@main.route('/cadrage/kanban')
+def kanban():
+    tasks = load_json('tasks.json')
+    collaborators = get_collaborators()
+    return render_template('kanban.html', title="Kanban du Projet", tasks=tasks, collaborators=collaborators)
 
 @main.route('/cadrage/export')
 def export_page():

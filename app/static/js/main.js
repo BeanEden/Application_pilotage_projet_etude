@@ -23,7 +23,7 @@ function exportToPDF() {
     // Configuration
     const opt = {
         margin: [10, 10, 10, 10],
-        filename: `NovaRetail_${pageTitle}.pdf`,
+        filename: `Vocalis_${pageTitle}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
             scale: 2,

@@ -4,7 +4,7 @@
 <div class="page-header">
     <div>
         <h1>Risques & Hypothèses</h1>
-        <p class="subtitle">Analyse de la criticité et plans de contingence du projet NovaRetail.</p>
+        <p class="subtitle">Analyse de la criticité et plans de contingence du projet Vocalis.</p>
     </div>
 </div>
 
@@ -21,6 +21,13 @@
     <div class="card" style="padding: 1.5rem; text-align: center; background: var(--accent); color: white;">
         <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; opacity: 0.9;">Budget Total</div>
         <div style="font-size: 1.75rem; font-weight: 800;" id="display-total">{{ "{:,.0f}".format(project_total).replace(',', ' ') }} €</div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <h2>Cartographie des Risques</h2>
+    <div style="display: flex; justify-content: center; align-items: center; padding: 1rem;">
+        <div id="risk-matrix-container"></div>
     </div>
 </div>
 
@@ -71,7 +78,12 @@ function renderRisks() {
         
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td><input type="text" class="form-control" value="${r.name}" onchange="updateRisk(${idx}, 'name', this.value)" style="font-weight: 600;"></td>
+            <td>
+                <div style="display:flex; align-items:center;">
+                    <span style="background: var(--text-primary); color: white; padding: 2px 6px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-right: 8px;">R${idx + 1}</span>
+                    <input type="text" class="form-control" value="${r.name}" onchange="updateRisk(${idx}, 'name', this.value)" style="font-weight: 600;">
+                </div>
+            </td>
             <td>
                 <select class="form-control" onchange="updateRisk(${idx}, 'probability', this.value)" style="${getColorStyle(r.probability)}">
                     <option value="Basse" ${r.probability === 'Basse' ? 'selected':''}>Basse</option>
@@ -114,6 +126,11 @@ function renderRisks() {
     let pct = 0;
     if (projectTotal > 0) pct = (envelopeTotal / projectTotal) * 100;
     document.getElementById('display-envelope-pct').innerText = pct.toFixed(1) + '% du budget de base';
+    
+    // Update the visual matrix
+    if (typeof renderRiskMatrix === 'function') {
+        renderRiskMatrix();
+    }
 }
 
 function updateRisk(idx, field, value) {
@@ -155,16 +172,97 @@ function saveRisks() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', renderRisks);
+function renderRiskMatrix() {
+    const container = document.getElementById('risk-matrix-container');
+    if (!container) return;
+    
+    const probs = ['Haute', 'Moyenne', 'Basse'];
+    const imps = ['Faible', 'Moyen', 'Fort', 'Critique'];
+    
+    function normProb(p) {
+        if (!p) return 'Moyenne';
+        if (['Haute', 'Élevée', 'Fort', 'Critique'].includes(p)) return 'Haute';
+        if (['Moyenne', 'Moyen', 'Modérée'].includes(p)) return 'Moyenne';
+        if (['Basse', 'Faible'].includes(p)) return 'Basse';
+        return 'Moyenne';
+    }
+    
+    function normImp(i) {
+        if (!i) return 'Moyen';
+        if (i === 'Critique') return 'Critique';
+        if (['Fort', 'Haute', 'Élevée'].includes(i)) return 'Fort';
+        if (['Moyen', 'Moyenne', 'Modérée'].includes(i)) return 'Moyen';
+        if (['Faible', 'Basse'].includes(i)) return 'Faible';
+        return 'Moyen';
+    }
+    
+    const matrixRisks = {};
+    risks.forEach((r, index) => {
+        const key = normProb(r.probability) + '-' + normImp(r.impact);
+        if (!matrixRisks[key]) matrixRisks[key] = [];
+        matrixRisks[key].push({ id: `R${index + 1}`, name: r.name });
+    });
+    
+    let html = '<table style="border-collapse: collapse; margin: auto;">';
+    
+    // Headers
+    html += '<tr><td style="border:none;"></td>';
+    imps.forEach(imp => {
+        html += `<td style="border:none; text-align:center; padding-bottom:10px; font-weight:600; color:var(--text-secondary);">${imp}</td>`;
+    });
+    html += '</tr>';
+    
+    probs.forEach(prob => {
+        html += '<tr>';
+        html += `<td style="border:none; text-align:right; padding-right:15px; font-weight:600; color:var(--text-secondary); vertical-align:middle;">${prob}</td>`;
+        
+        imps.forEach(imp => {
+            let bg = '';
+            if (prob === 'Haute') {
+                if (imp === 'Critique' || imp === 'Fort') bg = '#fca5a5';
+                else if (imp === 'Moyen') bg = '#fcd34d';
+                else bg = '#fef08a';
+            } else if (prob === 'Moyenne') {
+                if (imp === 'Critique') bg = '#fca5a5';
+                else if (imp === 'Fort' || imp === 'Moyen') bg = '#fcd34d';
+                else bg = '#86efac';
+            } else {
+                if (imp === 'Critique') bg = '#fcd34d';
+                else bg = '#86efac';
+            }
+            
+            const cellRisks = matrixRisks[prob + '-' + imp] || [];
+            let bubbles = '';
+            cellRisks.forEach(item => {
+                bubbles += `<div title="${item.name.replace(/"/g, '&quot;')}" style="background:var(--text-primary); color:white; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin:2px; font-weight:bold; font-size:0.75rem; cursor:help;">${item.id}</div>`;
+            });
+            
+            html += `<td style="width:100px; height:80px; border:3px solid white; background-color:${bg}; text-align:center; vertical-align:middle;">${bubbles}</td>`;
+        });
+        html += '</tr>';
+    });
+    
+    html += '</table>';
+    html += `<div style="text-align: center; margin-top: 15px; font-weight: 600; color: var(--text-secondary);">Impact</div>`;
+    
+    container.innerHTML = `<div style="display:flex; align-items:center; justify-content:center;">
+        <div style="transform:rotate(-90deg); transform-origin:center; font-weight:600; color:var(--text-secondary); margin-right:-20px;">Probabilité</div>
+        <div>${html}</div>
+    </div>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderRisks();
+});
 </script>
 
 <div class="card">
     <h2>Hypothèses de Travail</h2>
     <ul style="padding-left: 1.25rem; color: var(--text-secondary); line-height: 2.2; font-size: 0.9rem;">
         <li>Accès Fabric F64 garanti par l'école pour toute la durée du projet.</li>
-        <li>Données NovaRetail suffisamment complètes pour alimenter le Star Schema.</li>
+        <li>Données Vocalis suffisamment complètes pour alimenter le Star Schema.</li>
         <li>Disponibilité de l'équipe à hauteur de 3 jours/semaine minimum.</li>
-        <li>Format .docx des rapports NovaRetail stable et structuré pour Docling.</li>
+        <li>Format .docx des rapports Vocalis stable et structuré pour Docling.</li>
     </ul>
 </div>
 {% endblock %}

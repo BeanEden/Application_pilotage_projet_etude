@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-header">
     <div>
-        <h1>Backlog NovaRetail</h1>
+        <h1>Backlog Vocalis</h1>
         <p class="subtitle">Gestion interactive des tâches et des ressources du projet.</p>
     </div>
     <div style="display: flex; gap: 0.75rem; align-items: center;">
@@ -60,10 +60,11 @@
             <div class="form-group">
                 <label>Bucket</label>
                 <select id="form-task-bucket" class="form-control">
-                    <option value="Cadrage">Cadrage</option><option value="Architecture">Architecture</option>
-                    <option value="Modélisation">Modélisation</option><option value="Pipeline">Pipeline</option>
-                    <option value="Stack Alternative">Stack Alternative</option><option value="Power BI">Power BI</option>
-                    <option value="Rapport">Rapport</option><option value="Soutenance">Soutenance</option>
+                    <option value="Cadrage & analyse">Cadrage & analyse</option>
+                    <option value="Architecture & setup">Architecture & setup</option>
+                    <option value="Développement des 4 infrastructures">Développement des 4 infrastructures</option>
+                    <option value="Tests & évaluation">Tests & évaluation</option>
+                    <option value="Documentation & soutenance">Documentation & soutenance</option>
                 </select>
             </div>
         </div>
@@ -83,16 +84,30 @@
                 <!-- Rempli dynamiquement -->
             </div>
         </div>
-        <div class="form-group">
-            <label>Durée</label>
-            <div style="display: flex; gap: 0.5rem;">
-                <input type="number" step="0.5" id="form-task-duration-val" class="form-control" style="flex: 1;" placeholder="ex: 1">
-                <select id="form-task-duration-unit" class="form-control" style="flex: 1;">
-                    <option value="h">Heure(s)</option>
-                    <option value="j">Jour(s)</option>
-                    <option value="sem">Semaine(s)</option>
-                    <option value="mois">Mois</option>
-                </select>
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label>Durée</label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="number" step="0.5" id="form-task-duration-val" class="form-control" style="flex: 1;" placeholder="ex: 1" onchange="calculateEndDate()">
+                    <select id="form-task-duration-unit" class="form-control" style="flex: 1;" onchange="calculateEndDate()">
+                        <option value="h">Heure(s)</option>
+                        <option value="j">Jour(s)</option>
+                        <option value="sem">Semaine(s)</option>
+                        <option value="mois">Mois</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <div style="display: flex; gap: 0.5rem;">
+                    <div style="flex: 1;">
+                        <label>Date début</label>
+                        <input type="date" id="form-task-start-date" class="form-control" onchange="calculateEndDate()">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Date fin</label>
+                        <input type="date" id="form-task-end-date" class="form-control">
+                    </div>
+                </div>
             </div>
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
@@ -136,18 +151,29 @@ function renderBacklog() {
                 <span class="badge" style="margin-left: auto;">${groups[key].length} tâches</span>
             </div>
             <table><thead><tr>
-                <th style="width: 80px;">ID</th><th>Tâche</th><th>Assigné à</th><th>Durée</th><th>Dépend.</th><th style="width: 80px; text-align: center;">Actions</th>
+                <th style="width: 80px;">ID</th><th>Tâche</th><th>Assigné à</th><th>Durée</th><th>Dates</th><th>Dépend.</th><th style="width: 80px; text-align: center;">Actions</th>
             </tr></thead><tbody id="tbody-${key}"></tbody></table>
         `;
         container.appendChild(card);
         const tbody = document.getElementById(`tbody-${key}`);
         groups[key].forEach(task => {
             const row = document.createElement('tr');
+            row.draggable = true;
+            row.ondragstart = (e) => drag(e, task.id);
+            row.ondragover = (e) => allowDrop(e);
+            row.ondragleave = (e) => dragLeave(e);
+            row.ondrop = (e) => drop(e, task.id, key);
+            row.style.cursor = 'grab';
+            
             row.innerHTML = `
-                <td><span class="mono" style="color: var(--accent-vivid); font-weight: 700; font-size: 0.8rem;">${task.id}</span></td>
+                <td><span class="mono" style="color: var(--accent-vivid); font-weight: 700; font-size: 0.8rem;"><i class="ph ph-dots-six-vertical" style="color: var(--text-secondary); cursor: grab; margin-right: 4px;"></i>${task.id}</span></td>
                 <td style="font-weight: 500;">${task.task}<br><span style="font-size: 0.75rem; color: var(--text-secondary);">${task.type || "Tâche originelle"}</span></td>
                 <td><div style="display: flex; gap: 4px; flex-wrap: wrap;">${task.assignees.map(p => `<span class="badge">${p.split(' ')[0]}</span>`).join('')}</div></td>
                 <td style="color: var(--text-secondary); font-size: 0.85rem;"><i class="ph ph-clock"></i> ${task.duration}</td>
+                <td style="font-size: 0.8rem; color: var(--text-secondary);">
+                    ${task.start_date ? `<i class="ph ph-calendar-blank"></i> ${task.start_date}` : ''}
+                    ${task.end_date ? `<br><i class="ph ph-flag"></i> ${task.end_date}` : ''}
+                </td>
                 <td>${task.deps !== '-' ? `<span class="badge" style="background: rgba(255,59,48,0.06); color: var(--danger);">${task.deps}</span>` : '<span style="color: var(--border);">—</span>'}</td>
                 <td style="text-align: center;"><div style="display: flex; gap: 0.75rem; justify-content: center;"><i class="ph ph-pencil-simple edit-btn" onclick="editTask('${task.id}')"></i><i class="ph ph-trash remove-btn" onclick="removeTask('${task.id}')"></i></div></td>
             `;
@@ -203,6 +229,8 @@ function openTaskModal(isEdit = false) {
         document.getElementById('form-task-type').value = "Tâche originelle";
         document.getElementById('form-task-duration-val').value = "";
         document.getElementById('form-task-duration-unit').value = "sem";
+        document.getElementById('form-task-start-date').value = "";
+        document.getElementById('form-task-end-date').value = "";
         
         document.querySelectorAll('.assignee-checkbox').forEach(cb => cb.checked = false);
         document.querySelectorAll('.dep-checkbox').forEach(cb => cb.checked = false);
@@ -227,6 +255,8 @@ function editTask(taskId) {
         document.getElementById('form-task-duration-val').value = "";
         document.getElementById('form-task-duration-unit').value = "sem";
     }
+    document.getElementById('form-task-start-date').value = task.start_date || "";
+    document.getElementById('form-task-end-date').value = task.end_date || "";
 
     document.getElementById('form-task-sprint').value = task.sprint;
     document.getElementById('form-task-bucket').value = task.bucket;
@@ -239,6 +269,24 @@ function editTask(taskId) {
     document.querySelectorAll('.dep-checkbox').forEach(cb => {
         cb.checked = depsArray.includes(cb.value);
     });
+}
+
+function calculateEndDate() {
+    const startDateStr = document.getElementById('form-task-start-date').value;
+    const durVal = parseFloat(document.getElementById('form-task-duration-val').value);
+    const durUnit = document.getElementById('form-task-duration-unit').value;
+    
+    if (!startDateStr || isNaN(durVal)) return;
+    
+    let startDate = new Date(startDateStr);
+    let daysToAdd = 0;
+    if (durUnit === 'j') daysToAdd = durVal;
+    else if (durUnit === 'sem') daysToAdd = durVal * 7;
+    else if (durUnit === 'mois') daysToAdd = durVal * 30;
+    else if (durUnit === 'h') daysToAdd = durVal / 24;
+    
+    startDate.setDate(startDate.getDate() + Math.ceil(daysToAdd));
+    document.getElementById('form-task-end-date').value = startDate.toISOString().split('T')[0];
 }
 
 function saveTask() {
@@ -258,7 +306,10 @@ function saveTask() {
     const sprint = parseInt(document.getElementById('form-task-sprint').value);
     const bucket = document.getElementById('form-task-bucket').value;
     const taskType = document.getElementById('form-task-type').value;
-    const data = { id, task: taskName, assignees, duration, deps, sprint, bucket, type: taskType };
+    const start_date = document.getElementById('form-task-start-date').value;
+    const end_date = document.getElementById('form-task-end-date').value;
+    
+    const data = { id, task: taskName, assignees, duration, deps, sprint, bucket, type: taskType, start_date, end_date };
     
     // Calcul de la semaine de début en fonction des dépendances
     let computedStartWeek = (sprint - 1) * 2;
@@ -322,6 +373,64 @@ function removeTask(taskId) {
             renderBacklog(); 
         });
     } 
+}
+
+// Drag & Drop
+let draggedTaskId = null;
+
+function drag(ev, id) {
+    draggedTaskId = id;
+    ev.dataTransfer.effectAllowed = "move";
+}
+
+function allowDrop(ev) {
+    ev.preventDefault();
+    const tr = ev.target.closest('tr');
+    if (tr) tr.style.borderTop = "2px solid var(--accent)";
+}
+
+function dragLeave(ev) {
+    const tr = ev.target.closest('tr');
+    if (tr) tr.style.borderTop = "";
+}
+
+function drop(ev, targetId, groupKey) {
+    ev.preventDefault();
+    const tr = ev.target.closest('tr');
+    if (tr) tr.style.borderTop = "";
+    
+    if (draggedTaskId === targetId || !draggedTaskId) return;
+
+    const draggedIndex = allTasks.findIndex(t => t.id === draggedTaskId);
+    if (draggedIndex === -1) return;
+
+    const movedTask = allTasks.splice(draggedIndex, 1)[0];
+    
+    const newTargetIndex = allTasks.findIndex(t => t.id === targetId);
+    if (newTargetIndex === -1) {
+        allTasks.push(movedTask);
+    } else {
+        allTasks.splice(newTargetIndex, 0, movedTask);
+    }
+
+    const targetTask = allTasks.find(t => t.id === targetId);
+    if (targetTask) {
+        if (currentGrouping === 'sprint') {
+            movedTask.sprint = targetTask.sprint;
+        } else if (currentGrouping === 'bucket') {
+            movedTask.bucket = targetTask.bucket;
+        }
+    }
+
+    fetch('/api/save-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(allTasks)
+    }).then(() => {
+        renderBacklog(); 
+    });
+    
+    draggedTaskId = null;
 }
 
 renderBacklog();

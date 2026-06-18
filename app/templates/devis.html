@@ -4,7 +4,7 @@
 <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
     <div>
         <h1>Devis Client</h1>
-        <p class="subtitle">Récapitulatif des montants facturés (HT) pour le projet NovaRetail.</p>
+        <p class="subtitle">Récapitulatif des montants facturés (HT) pour le projet Vocalis.</p>
     </div>
     <div style="display: flex; gap: 0.75rem;">
         <button class="btn btn-primary" onclick="exportPDF()" style="display: flex; align-items: center; gap: 0.5rem;">
@@ -17,7 +17,7 @@
     
     <div style="text-align: center; margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 2px solid var(--border-light);">
         <h2 style="font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem;">Devis Estimatif (HT)</h2>
-        <div style="font-size: 1rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Projet NovaRetail - M2 Big Data</div>
+        <div style="font-size: 1rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Projet Vocalis - M2 Big Data</div>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;">
@@ -53,7 +53,7 @@
     
     <div style="margin-top: 4rem; padding-top: 2rem; border-top: 1px dashed var(--border); font-size: 0.85rem; color: var(--text-secondary); text-align: center;">
         Ce devis est estimatif et non contractuel. Les montants exprimés sont hors taxes (HT).<br>
-        Généré le <span id="current-date-print"></span> depuis NovaRetail Tracker.
+        Généré le <span id="current-date-print"></span> depuis Vocalis Tracker.
     </div>
 
 </div>
@@ -213,7 +213,7 @@ function exportPDF() {
     
     const opt = {
         margin:       10,
-        filename:     'Devis_NovaRetail.pdf',
+        filename:     'Devis_Vocalis.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, useCORS: true },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }

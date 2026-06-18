@@ -25,22 +25,12 @@
         "charge_rate": 0.45,
         "id": 3,
         "name": "Ludovic PICARD",
-        "role": "Data Scientist / Power BI Expert",
+        "role": "Data Scientist",
         "salary": 45000,
         "tjm_applied": 400,
         "weather": "rainy",
         "weather_history": {
             "0": "rainy"
         }
-    },
-    {
-        "category": "Externe",
-        "charge_rate": 0,
-        "id": "sh_1779869800150",
-        "name": "Frank ORAGA",
-        "role": "Product Owner",
-        "salary": 0,
-        "tjm_applied": 0,
-        "weather_history": {}
     }
 ]

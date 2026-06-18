@@ -1,47 +1,58 @@
 [
     {
-        "epic": "Epic 1 — Cadrage & Setup (Sprint 1)",
-        "stories": [
-            {"id": "US-01", "role": "DSI", "want": "un workspace Fabric configuré pour démarrer l'ingestion"},
-            {"id": "US-02", "role": "développeur", "want": "Docling installé et testé dans un notebook Fabric"},
-            {"id": "US-03", "role": "équipe", "want": "une architecture documentée (schéma technique + vulgarisé)"},
-            {"id": "US-04", "role": "Clément", "want": "un environnement Docker/MinIO/Airflow opérationnel"}
-        ]
+        "id": "US-1",
+        "actor": "Consommateur",
+        "action": "poser une question",
+        "value": "recevoir réponse contextualisée",
+        "status": "Done"
     },
     {
-        "epic": "Epic 2 — Pipeline Bronze Multiformat (Sprint 2)",
-        "stories": [
-            {"id": "US-05", "role": "data engineer", "want": "ingérer les zips mensuels DOCX en Bronze de façon idempotente"},
-            {"id": "US-06", "role": "data engineer", "want": "supporter PDF, XLSX, PPTX dans le même pipeline Bronze"},
-            {"id": "US-07", "role": "data engineer", "want": "un connecteur SharePoint pour récupérer les BDC NovaConnect toutes les 45 min"},
-            {"id": "US-08", "role": "data engineer", "want": "un connecteur e-mail pour extraire les pièces jointes BDC"},
-            {"id": "US-09", "role": "responsable qualité", "want": "détecter et journaliser les fichiers corrompus"},
-            {"id": "US-10", "role": "data engineer", "want": "paralléliser le parsing Docling pour optimiser les performances"}
-        ]
+        "id": "US-2",
+        "actor": "Entreprise TEST",
+        "action": "uploader un document",
+        "value": "l'intégrer au chatbot pour améliorer les réponses",
+        "status": "In Progress"
     },
     {
-        "epic": "Epic 3 — Transformation Silver & Gold (Sprint 2-3)",
-        "stories": [
-            {"id": "US-11", "role": "data analyst", "want": "des données Silver propres (typage, déduplication, validation)"},
-            {"id": "US-12", "role": "data analyst", "want": "des KPI Gold calculés (CA, volumes, top articles, évolution)"},
-            {"id": "US-13", "role": "responsable", "want": "un modèle étoile Gold prêt pour Power BI"}
-        ]
+        "id": "US-3",
+        "actor": "VOCALIS",
+        "action": "surveiller l'usage d'un client",
+        "value": "ajuster la facturation en fonction de la consommation",
+        "status": "To Do"
     },
     {
-        "epic": "Epic 4 — Dashboard & Restitution (Sprint 3)",
-        "stories": [
-            {"id": "US-14", "role": "Sales Executive", "want": "voir le CA global et par client en temps réel"},
-            {"id": "US-15", "role": "DSI", "want": "visualiser le volume de commandes et l'évolution temporelle"},
-            {"id": "US-16", "role": "directrice marketing", "want": "identifier les top produits et familles"},
-            {"id": "US-17", "role": "responsable", "want": "des alertes sur les anomalies de commande"}
-        ]
+        "id": "US-4",
+        "actor": "VOCALIS",
+        "action": "couper l'accès d'un client en 1 clic",
+        "value": "gérer les impayés ou les résiliations facilement",
+        "status": "To Do"
     },
     {
-        "epic": "Epic 5 — Rapport, Soutenance & Clôture (Sprint 4)",
-        "stories": [
-            {"id": "US-18", "role": "équipe", "want": "un rapport final structuré 15-20 pages"},
-            {"id": "US-19", "role": "équipe", "want": "une démonstration live du pipeline complet"},
-            {"id": "US-20", "role": "Clément", "want": "documenter et comparer la stack alternative vs Fabric"}
-        ]
+        "id": "US-5",
+        "actor": "Entreprise TEST",
+        "action": "consulter les statistiques d'utilisation",
+        "value": "mesurer l'engagement des consommateurs avec le widget",
+        "status": "To Do"
+    },
+    {
+        "id": "US-6",
+        "actor": "Entreprise TEST",
+        "action": "intégrer le widget sur n'importe quel site",
+        "value": "déployer l'outil sans compétences techniques particulières",
+        "status": "Done"
+    },
+    {
+        "id": "US-7",
+        "actor": "Administrateur VOCALIS",
+        "action": "modifier le TJM et affecter des développeurs",
+        "value": "simuler et ajuster le coût global du projet",
+        "status": "In Progress"
+    },
+    {
+        "id": "US-8",
+        "actor": "Consommateur",
+        "action": "obtenir des sources cliquables avec la réponse",
+        "value": "vérifier la fiabilité des informations fournies par le RAG",
+        "status": "To Do"
     }
 ]

@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title if title else 'NovaRetail Tracker' }} — Sup de Vinci</title>
-    <meta name="description" content="Tableau de bord de suivi du projet NovaRetail — M2 Big Data, Sup de Vinci.">
+    <title>{{ title if title else 'Vocalis Tracker' }} — Sup de Vinci</title>
+    <meta name="description" content="Tableau de bord de suivi du projet Vocalis — M2 Big Data, Sup de Vinci.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -17,7 +17,7 @@
 
 <body>
     <nav class="sidebar">
-        <div class="logo">NOVARETAIL</div>
+        <div class="logo">VOCALIS</div>
         <ul class="nav-links">
             <li class="nav-item">
                 <a href="{{ url_for('main.index') }}" class="nav-link {{ 'active' if request.path == '/' }}">
@@ -101,6 +101,11 @@
                 <a href="{{ url_for('main.evenements') }}"
                     class="nav-link {{ 'active' if '/evenements' in request.path }}">
                     <i class="ph ph-lightning"></i> Journal des Évènements
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('main.kanban') }}" class="nav-link {{ 'active' if '/kanban' in request.path }}">
+                    <i class="ph ph-kanban"></i> Kanban
                 </a>
             </li>
 

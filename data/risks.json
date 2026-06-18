@@ -1,62 +1,92 @@
 [
     {
-        "action": "Mise en place d'un cache local et monitoring.",
-        "criticality": "Élevée",
-        "financial_impact": "500",
-        "id": "r1",
+        "id": "R-1",
+        "probability": "Élevée",
         "impact": "Fort",
-        "name": "Latence API Fabric",
-        "probability": "Moyenne",
-        "provision": true
-    },
-    {
-        "action": "Stack alternative Docker/Airflow prête en fallback.",
-        "criticality": "Critique",
-        "financial_impact": "1500",
-        "id": "r2",
-        "impact": "Critique",
-        "name": "Disponibilité Licence Fabric F64",
-        "probability": "Haute",
-        "provision": true
-    },
-    {
-        "action": "Itérations de validation avec le rapport Livrable B.",
-        "criticality": "Modérée",
-        "financial_impact": "100",
-        "id": "r3",
-        "impact": "Moyen",
-        "name": "Complexité modélisation Star Schema",
-        "probability": "Moyenne",
-        "provision": true
-    },
-    {
-        "action": "Matrice RACI claire et suivi Gantt hebdomadaire.",
-        "criticality": "Faible",
-        "financial_impact": "500",
-        "id": "r4",
-        "impact": "Moyen",
-        "name": "Charge équipe insuffisante",
-        "probability": "Basse",
+        "name": "Architecture trop modulaire (Synchronisation complexe entre les microservices)",
+        "action": "Mise en place de contrats d'API stricts et orchestration.",
+        "criticality": "Élevée",
+        "financial_impact": 0,
         "provision": false
     },
     {
-        "action": "",
-        "criticality": "Faible",
-        "financial_impact": "2000",
-        "id": "r_1779871064051",
-        "impact": "Faible",
-        "name": "Enveloppe tous risques",
-        "probability": "Basse",
-        "provision": true
+        "id": "R-2",
+        "probability": "Modérée",
+        "impact": "Moyen",
+        "name": "Conflits de librairies Python (Notamment LangChain et ses dépendances.)",
+        "action": "Utilisation d'environnements virtuels stricts et de versions verrouillées.",
+        "criticality": "Modérée",
+        "financial_impact": 0,
+        "provision": false
     },
     {
-        "action": "Faire",
-        "criticality": "Critique",
-        "financial_impact": "5000",
-        "id": "r_1779871097234",
+        "id": "R-3",
+        "probability": "Modérée",
+        "impact": "Moyen",
+        "name": "Bug dans la librairie RAGAS (Problèmes avec la version la plus récente de RAGAS.)",
+        "action": "Downgrade vers une version stable précédente et suivi des issues GitHub.",
+        "criticality": "Modérée",
+        "financial_impact": 0,
+        "provision": false
+    },
+    {
+        "id": "R-4",
+        "probability": "Faible",
+        "impact": "Fort",
+        "name": "Gestion des imports asynchrones (Problèmes de compatibilité asynchrone entre FastAPI et Django.)",
+        "action": "Séparation des couches ou adaptation des workers asynchrones.",
+        "criticality": "Modérée",
+        "financial_impact": 0,
+        "provision": false
+    },
+    {
+        "id": "R-5",
+        "probability": "Élevée",
+        "impact": "Fort",
+        "name": "Incompatibilité avec l'architecture client (Le système cible du client (Entreprise TEST) ne supporte pas le Widget ou requiert une intégration spécifique coûteuse.)",
+        "action": "Analyse préalable de l'infrastructure client et fourniture d'une documentation API claire.",
+        "criticality": "Élevée",
+        "financial_impact": 0,
+        "provision": false
+    },
+    {
+        "id": "R-6",
+        "probability": "Modérée",
+        "impact": "Fort",
+        "name": "Soucis de dépendances critiques (Mise à jour majeure d'une librairie tierce cassant la compatibilité du projet (ex: OpenAI, LangChain).)",
+        "action": "Figer les versions dans le requirements.txt et mettre en place des tests automatisés.",
+        "criticality": "Modérée",
+        "financial_impact": 0,
+        "provision": false
+    },
+    {
+        "id": "R-7",
+        "probability": "Faible",
         "impact": "Critique",
-        "name": "Nouvelle tâche client",
-        "probability": "Haute",
-        "provision": true
+        "name": "Perte du logiciel ou des données (Perte du code source ou effacement accidentel de la base de données vectorielle des clients.)",
+        "action": "Sauvegardes automatiques quotidiennes (Backups) et versioning strict via Git.",
+        "criticality": "Modérée",
+        "financial_impact": 0,
+        "provision": false
+    },
+    {
+        "id": "R-8",
+        "probability": "Modérée",
+        "impact": "Moyen",
+        "name": "Adoption insuffisante par les consommateurs (Le chatbot n'est pas utilisé par les clients finaux en raison d'un manque d'ergonomie.)",
+        "action": "Phase d'A/B testing sur l'interface et accompagnement au lancement.",
+        "criticality": "Modérée",
+        "financial_impact": 0,
+        "provision": false
+    },
+    {
+        "id": "R-9",
+        "probability": "Modérée",
+        "impact": "Fort",
+        "name": "Dérapage du budget d'API LLM (Coût exponentiel lié à un volume de requêtes LLM imprévu.)",
+        "action": "Mise en place d'alertes de facturation (budgets cap) et limitation du nombre de requêtes par utilisateur (Rate limiting).",
+        "criticality": "Modérée",
+        "financial_impact": 0,
+        "provision": false
     }
 ]
